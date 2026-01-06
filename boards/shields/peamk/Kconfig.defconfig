@@ -1,0 +1,33 @@
+# Copyright (c) 2022 The ZMK Contributors
+# SPDX-License-Identifier: MIT
+
+if SHIELD_PEAMK_LEFT
+
+config ZMK_KEYBOARD_NAME
+    default "PeaMK"
+
+config ZMK_SPLIT_ROLE_CENTRAL
+    default y
+
+endif # SHIELD_PEAMK_LEFT
+
+if SHIELD_PEAMK_LEFT || SHIELD_PEAMK_RIGHT
+
+config ZMK_SPLIT
+    default y
+
+config SPI
+    default y
+
+config ZMK_RGB_UNDERGLOW
+    default y
+    select WS2812_STRIP
+    select SPI
+
+config ZMK_RGB_UNDERGLOW_BRT_START
+    default 50
+
+config ZMK_RGB_UNDERGLOW_EFF_START
+    default 3
+
+endif # SHIELD_PEAMK_LEFT || SHIELD_PEAMK_RIGHT

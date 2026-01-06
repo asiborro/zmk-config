@@ -1,0 +1,15 @@
+/*
+ * Copyright (c) 2022 The ZMK Contributors
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+#include "peamk_r2c.dtsi"
+
+&bootloader_key_left {
+    status = "okay";
+};
+
+/ {
+
+};
