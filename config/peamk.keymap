@@ -70,8 +70,8 @@
                 &kp Z      &kp X      &kp C      &kp D      &kp V      &none      &none
                 &kp K      &kp H      &kp COMMA  &kp DOT    &kp FSLH   &none      &none
                 // Row 3 - Extra keys on 4-row columns (left cols 1,2 | right cols 2,3)
-                &none      &none      &none      &none      &none      &none      &none
-                &none      &none      &colon_inv &tilde_inv &none      &none      &none
+                &none      &colon_inv &tilde_inv &none      &none      &none      &none
+                &none      &none      &kp LBKT   &kp RBKT   &none      &none      &none
                 // Row 4
                 &none      &none      &none      &none      &none      &none      &none
                 &none      &none      &none      &none      &none      &none      &none
