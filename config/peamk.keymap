@@ -1,0 +1,136 @@
+/*
+ * Miryoku-style layout for Cosmos Lemon Wireless
+ * Matrix: 7 rows × 14 columns (cols 0-6 left, cols 7-D right)
+ * Total: 98 positions per layer
+ *
+ * Your layout: 3-3-4-4-3 columns right (mirrored left), thumbs row 6
+ * Adjust key positions based on your peaMK testing!
+ */
+
+#include <behaviors.dtsi>
+#include <dt-bindings/zmk/keys.h>
+#include <dt-bindings/zmk/bt.h>
+#include <dt-bindings/zmk/rgb.h>
+
+/ {
+    behaviors {
+        hm: homerow_mod {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            tapping-term-ms = <200>;
+            quick-tap-ms = <0>;
+            flavor = "tap-preferred";
+            bindings = <&kp>, <&kp>;
+        };
+    };
+
+    keymap {
+        compatible = "zmk,keymap";
+
+        default_layer {
+            // 98 bindings: 7 rows × 14 cols
+            // Order: R0C0-R0C6 (left), R0C7-R0CD (right), R1C0-R1C6, R1C7-R1CD, ...
+            bindings = <
+                // Row 0: left cols 0-6,                      right cols 7-D
+                &kp Q     &kp W     &kp E     &kp R     &kp T     &none     &none
+                &kp Y     &kp U     &kp I     &kp O     &kp P     &none     &none
+                // Row 1
+                &hm LGUI A &hm LALT S &hm LCTL D &hm LSFT F &kp G &none     &none
+                &kp H     &hm RSFT J &hm RCTL K &hm RALT L &hm RGUI SEMI &none &none
+                // Row 2
+                &kp Z     &kp X     &kp C     &kp V     &kp B     &none     &none
+                &kp N     &kp M     &kp COMMA &kp DOT   &kp FSLH  &none     &none
+                // Row 3 (extra row if you have it)
+                &none     &none     &none     &none     &none     &none     &none
+                &none     &none     &none     &none     &none     &none     &none
+                // Row 4
+                &none     &none     &none     &none     &none     &none     &none
+                &none     &none     &none     &none     &none     &none     &none
+                // Row 5
+                &none     &none     &none     &none     &none     &none     &none
+                &none     &none     &none     &none     &none     &none     &none
+                // Row 6 - Thumbs: left 5 keys (cols 0-4), right 3 keys (cols 7-9)
+                &kp ESC   &lt 1 SPACE &kp TAB &lt 3 DEL &none     &none     &none
+                &kp RET   &lt 2 BSPC &kp RALT &none     &none     &none     &none
+            >;
+        };
+
+        nav_layer {
+            bindings = <
+                // Row 0
+                &none     &none     &none     &none     &none     &none     &none
+                &none     &none     &none     &none     &none     &none     &none
+                // Row 1 - home row mods + arrows
+                &kp LGUI  &kp LALT  &kp LCTL  &kp LSFT  &none     &none     &none
+                &kp LEFT  &kp DOWN  &kp UP    &kp RIGHT &none     &none     &none
+                // Row 2
+                &none     &none     &none     &none     &none     &none     &none
+                &kp HOME  &kp PG_DN &kp PG_UP &kp END   &none     &none     &none
+                // Row 3
+                &none     &none     &none     &none     &none     &none     &none
+                &none     &none     &none     &none     &none     &none     &none
+                // Row 4
+                &none     &none     &none     &none     &none     &none     &none
+                &none     &none     &none     &none     &none     &none     &none
+                // Row 5
+                &none     &none     &none     &none     &none     &none     &none
+                &none     &none     &none     &none     &none     &none     &none
+                // Row 6 - Thumbs
+                &trans    &trans    &trans    &trans    &none     &none     &none
+                &kp RET   &kp BSPC  &kp DEL   &none     &none     &none     &none
+            >;
+        };
+
+        num_layer {
+            bindings = <
+                // Row 0 - symbols/numbers
+                &kp LBKT  &kp N7    &kp N8    &kp N9    &kp RBKT  &none     &none
+                &none     &none     &none     &none     &none     &none     &none
+                // Row 1
+                &kp SQT   &kp N4    &kp N5    &kp N6    &kp EQUAL &none     &none
+                &none     &kp RSFT  &kp RCTL  &kp RALT  &kp RGUI  &none     &none
+                // Row 2
+                &kp GRAVE &kp N1    &kp N2    &kp N3    &kp BSLH  &none     &none
+                &none     &none     &none     &none     &none     &none     &none
+                // Row 3
+                &none     &none     &none     &none     &none     &none     &none
+                &none     &none     &none     &none     &none     &none     &none
+                // Row 4
+                &none     &none     &none     &none     &none     &none     &none
+                &none     &none     &none     &none     &none     &none     &none
+                // Row 5
+                &none     &none     &none     &none     &none     &none     &none
+                &none     &none     &none     &none     &none     &none     &none
+                // Row 6 - Thumbs
+                &kp DOT   &kp N0    &kp MINUS &none     &none     &none     &none
+                &trans    &trans    &trans    &none     &none     &none     &none
+            >;
+        };
+
+        fun_layer {
+            bindings = <
+                // Row 0 - F keys
+                &kp F12   &kp F7    &kp F8    &kp F9    &none     &none     &none
+                &none     &none     &none     &none     &bootloader &none   &none
+                // Row 1
+                &kp F11   &kp F4    &kp F5    &kp F6    &none     &none     &none
+                &bt BT_CLR &kp RSFT &kp RCTL  &kp RALT  &kp RGUI  &none     &none
+                // Row 2
+                &kp F10   &kp F1    &kp F2    &kp F3    &none     &none     &none
+                &bt BT_SEL 0 &bt BT_SEL 1 &bt BT_SEL 2 &none &none &none   &none
+                // Row 3
+                &none     &none     &none     &none     &none     &none     &none
+                &none     &none     &none     &none     &none     &none     &none
+                // Row 4
+                &none     &none     &none     &none     &none     &none     &none
+                &none     &none     &none     &none     &none     &none     &none
+                // Row 5
+                &none     &none     &none     &none     &none     &none     &none
+                &none     &none     &none     &none     &none     &none     &none
+                // Row 6 - Thumbs
+                &trans    &kp SPACE &kp TAB   &trans    &none     &none     &none
+                &trans    &trans    &trans    &none     &none     &none     &none
+            >;
+        };
+    };
+};
