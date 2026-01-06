@@ -38,6 +38,20 @@
             flavor = "hold-preferred";
             bindings = <&mo>, <&kp>;
         };
+        // Inverted colon: : normally, ; when shifted
+        colon_inv: colon_inv {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&kp COLON>, <&kp SEMI>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        // Inverted tilde: ~ normally, ` when shifted
+        tilde_inv: tilde_inv {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&kp TILDE>, <&kp GRAVE>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
     };
 
     keymap {
@@ -55,9 +69,9 @@
                 // Row 2
                 &kp Z      &kp X      &kp C      &kp D      &kp V      &none      &none
                 &kp K      &kp H      &kp COMMA  &kp DOT    &kp FSLH   &none      &none
-                // Row 3
+                // Row 3 - Extra keys on 4-row columns (left cols 1,2 | right cols 2,3)
                 &none      &none      &none      &none      &none      &none      &none
-                &none      &none      &none      &none      &none      &none      &none
+                &none      &none      &colon_inv &tilde_inv &none      &none      &none
                 // Row 4
                 &none      &none      &none      &none      &none      &none      &none
                 &none      &none      &none      &none      &none      &none      &none
