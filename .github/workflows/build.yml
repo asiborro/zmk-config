@@ -18,7 +18,7 @@ jobs:
         include:
           - shield: peamk_r2c_left
             artifact: left
-          - shield: peamk_r2c_right
+          - shield: "peamk_r2c_right vik_pmw3610"
             artifact: right
           - shield: settings_reset
             artifact: reset
@@ -54,5 +54,6 @@ jobs:
       - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.shield }}
+          name: ${{ matrix.artifact }}
           path: build/zephyr/zmk.uf2
+          compression-level: 0
