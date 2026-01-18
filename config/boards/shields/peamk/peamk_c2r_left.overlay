@@ -10,6 +10,27 @@
     status = "okay";
 };
 
-/ {
+/*
+ * PMW3610 Trackball via VIK breakout
+ * VIK CS: gpio0 8
+ * VIK GPIO2 (Motion/IRQ): gpio0 31
+ */
+&spi1 {
+    status = "okay";
+    cs-gpios = <&gpio0 8 GPIO_ACTIVE_LOW>;
 
+    trackball: trackball@0 {
+        compatible = "pixart,pmw3610";
+        status = "okay";
+        reg = <0>;
+        spi-max-frequency = <2000000>;
+        irq-gpios = <&gpio0 31 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+    };
+};
+
+/ {
+    trackball_listener {
+        compatible = "zmk,input-listener";
+        device = <&trackball>;
+    };
 };
