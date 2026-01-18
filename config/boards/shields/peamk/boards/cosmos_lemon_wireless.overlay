@@ -66,3 +66,4 @@
 
 vik_i2c: &i2c0 {};
 vik_spi: &spi1 {};
+vik_spi_pmw3610: &spi1 {};
