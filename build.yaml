@@ -1,7 +1,7 @@
 ---
 include:
   - board: cosmos_lemon_wireless
-    shield: peamk_c2r_left
+    shield: peamk_c2r_left vik_pmw3610
   - board: cosmos_lemon_wireless
     shield: peamk_c2r_right
   - board: cosmos_lemon_wireless
