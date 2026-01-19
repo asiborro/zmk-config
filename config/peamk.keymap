@@ -11,6 +11,7 @@
 #include <dt-bindings/zmk/bt.h>
 #include <dt-bindings/zmk/rgb.h>
 #include <dt-bindings/zmk/outputs.h>
+#include <dt-bindings/zmk/ext_power.h>
 
 #define BASE 0
 #define NAV  1
@@ -67,8 +68,8 @@
                 &hm LGUI A &hm LALT R &hm LCTRL S &hm LSHFT T &kp G    &none      &none
                 &kp M      &hm RSHFT N &hm RCTRL E &hm RALT I &hm RGUI O &none    &none
                 // Row 2
-                &kp Z      &kp X      &kp C      &kp D      &kp V      &none      &none
-                &kp K      &kp H      &kp COMMA  &kp DOT    &kp FSLH   &none      &none
+                &kp Z      &kp X      &kp C      &kp D      &ext_power EP_TOG &none &none
+                &kp K      &kp H      &kp COMMA  &kp DOT    &ext_power EP_TOG &none &none
                 // Row 3 - Extra keys on 4-row columns (left cols 1,2 | right cols 2,3)
                 &none      &colon_inv &tilde_inv &none      &none      &none      &none
                 &none      &none      &kp LBKT   &kp RBKT   &none      &none      &none
