@@ -45,7 +45,7 @@
     trackball_listener {
         compatible = "zmk,input-listener";
         device = <&trackball>;
-        input-processors = <&tb_transform (INPUT_TRANSFORM_XY_SWAP | INPUT_TRANSFORM_X_INVERT)>;
+        input-processors = <&tb_transform INPUT_TRANSFORM_XY_SWAP>;
     };
 };
 
