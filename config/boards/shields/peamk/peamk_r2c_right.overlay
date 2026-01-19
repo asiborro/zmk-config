@@ -6,6 +6,7 @@
 
 #include "peamk_r2c.dtsi"
 #include <zephyr/dt-bindings/input/input-event-codes.h>
+#include <dt-bindings/zmk/input_transform.h>
 
 &bootloader_key_right {
     status = "okay";
