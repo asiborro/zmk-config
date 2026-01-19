@@ -5,6 +5,7 @@
  */
 
 #include "peamk_r2c.dtsi"
+#include <zephyr/dt-bindings/input/input-event-codes.h>
 
 &bootloader_key_right {
     status = "okay";
@@ -32,9 +33,18 @@
 };
 
 / {
+    tb_transform: tb_transform {
+        compatible = "zmk,input-processor-transform";
+        #input-processor-cells = <1>;
+        type = <INPUT_EV_REL>;
+        x-codes = <INPUT_REL_X>;
+        y-codes = <INPUT_REL_Y>;
+    };
+
     trackball_listener {
         compatible = "zmk,input-listener";
         device = <&trackball>;
+        input-processors = <&tb_transform (INPUT_TRANSFORM_XY_SWAP | INPUT_TRANSFORM_X_INVERT)>;
     };
 };
 
