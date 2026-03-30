@@ -247,7 +247,6 @@
                 &trans     &trans     &trans     &none      &none      &none      &none
             >;
         };
-    };
 
         // Layer 7: Vi - Arrow keys at HJKL home row positions
         vi_layer {
