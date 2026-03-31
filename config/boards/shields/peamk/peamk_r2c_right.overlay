@@ -58,7 +58,7 @@
 
         scroller {
             layers = <8>;
-            input-processors = <&scroll_scaler 1 3 &zip_xy_to_scroll_mapper>;
+            input-processors = <&scroll_scaler 1 8 &tb_transform (INPUT_TRANSFORM_XY_SWAP | INPUT_TRANSFORM_X_INVERT) &zip_xy_to_scroll_mapper>;
         };
     };
 };
