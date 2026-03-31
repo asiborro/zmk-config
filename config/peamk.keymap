@@ -69,7 +69,7 @@
                 &hm LGUI A &hm LALT R &hm LCTRL S &hm LSHFT T &kp G    &none      &none
                 &kp M      &hm RSHFT N &hm RCTRL E &hm RALT I &hm RGUI O &none    &none
                 // Row 2
-                &kp Z      &kp X      &kp C      &kp D      &ext_power EP_TOG &none &none
+                &kp Z      &kp X      &kp C      &kp D      &kp V      &none &none
                 &kp K      &kp H      &kp COMMA  &kp DOT    &kp FSLH   &none &none
                 // Row 3 - Extra keys on 4-row columns (left cols 1,2 | right cols 2,3)
                 &none      &colon_inv &tilde_inv &none      &none      &none      &none
@@ -81,7 +81,7 @@
                 &none      &none      &none      &none      &none      &none      &none
                 &none      &none      &none      &none      &none      &none      &none
                 // Row 6 - Thumbs: Esc/Media, Space/Nav, Tab/Mouse | Enter/Sym, Bspc/Num, Del/Fun
-                &lt MEDIA ESC &lt NAV SPACE &lt MOUSE TAB &none &tog VI &none    &none
+                &lt MEDIA ESC &lt NAV SPACE &lt MOUSE TAB &none &mo VI &none     &none
                 &lt SYM RET &lt NUM BSPC &lt FUN DEL &none  &none      &none      &none
             >;
         };
@@ -269,8 +269,8 @@
                 // Row 5
                 &none      &none      &none      &none      &none      &none      &none
                 &none      &none      &none      &none      &none      &none      &none
-                // Row 6 - tog VI to exit
-                &none      &none      &none      &none      &tog VI    &none      &none
+                // Row 6 - mo VI held from base
+                &none      &none      &none      &none      &trans     &none      &none
                 &none      &none      &none      &none      &none      &none      &none
             >;
         };
