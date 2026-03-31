@@ -54,11 +54,11 @@
     trackball_listener {
         compatible = "zmk,input-listener";
         device = <&trackball>;
-        input-processors = <&tb_transform (INPUT_TRANSFORM_XY_SWAP | INPUT_TRANSFORM_X_INVERT)>;
+        input-processors = <&scroll_scaler 3 4 &tb_transform (INPUT_TRANSFORM_XY_SWAP | INPUT_TRANSFORM_X_INVERT)>;
 
         scroller {
             layers = <8>;
-            input-processors = <&scroll_scaler 1 12 &tb_transform (INPUT_TRANSFORM_XY_SWAP | INPUT_TRANSFORM_X_INVERT | INPUT_TRANSFORM_Y_INVERT) &zip_xy_to_scroll_mapper>;
+            input-processors = <&scroll_scaler 1 16 &tb_transform (INPUT_TRANSFORM_XY_SWAP | INPUT_TRANSFORM_X_INVERT | INPUT_TRANSFORM_Y_INVERT) &zip_xy_to_scroll_mapper>;
         };
     };
 };
