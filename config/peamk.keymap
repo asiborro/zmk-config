@@ -82,7 +82,7 @@
                 &none      &none      &none      &none      &none      &none      &none
                 &none      &none      &none      &none      &none      &none      &none
                 // Row 6 - Thumbs: Esc/Media, Space/Nav, Tab/Mouse | Enter/Sym, Bspc/Num, Del/Fun
-                &lt MEDIA ESC &lt NAV SPACE &lt MOUSE TAB &mkp RCLK &lt VI SPACE &mkp LCLK &none
+                &lt MEDIA ESC &lt NAV SPACE &lt MOUSE TAB &mkp RCLK &lt_hp VI SPACE &mkp LCLK &none
                 &lt SYM RET &lt NUM BSPC &lt FUN DEL &none  &none      &none      &none
             >;
         };
@@ -95,7 +95,7 @@
                 &none      &none      &none      &none      &none      &none      &none
                 // Row 1 - Home row mods (transparent) | Arrows
                 &kp LGUI   &kp LALT   &kp LCTRL  &kp LSHFT  &none      &none      &none
-                &kp LEFT   &kp DOWN   &kp UP     &kp RIGHT  &kp CAPS   &none      &none
+                &kp LEFT   &kp DOWN   &kp UP     &kp RIGHT  &none      &none      &none
                 // Row 2 | Home/End, PgUp/Dn
                 &none      &none      &none      &none      &none      &none      &none
                 &kp HOME   &kp PG_DN  &kp PG_UP  &kp END    &kp INS    &none      &none
