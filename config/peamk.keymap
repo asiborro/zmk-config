@@ -3,7 +3,7 @@
  * https://github.com/manna-harbour/miryoku
  *
  * Colemak-DH + GACS home row mods
- * 8 layers: Base, Nav, Mouse, Media, Num, Sym, Fun, Vi
+ * 9 layers: Base, Nav, Mouse, Media, Num, Sym, Fun, Vi, Scroll
  */
 
 #include <behaviors.dtsi>
@@ -22,6 +22,7 @@
 #define SYM  5
 #define FUN  6
 #define VI   7
+#define SCROLL 8
 
 / {
     behaviors {
@@ -40,6 +41,13 @@
             tapping-term-ms = <200>;
             flavor = "hold-preferred";
             bindings = <&mo>, <&kp>;
+        };
+        lt_mkp: layer_tap_mouse {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            tapping-term-ms = <200>;
+            flavor = "balanced";
+            bindings = <&mo>, <&mkp>;
         };
         // Inverted colon: : normally, ; when shifted
         colon_inv: colon_inv {
@@ -82,7 +90,7 @@
                 &none      &none      &none      &none      &none      &none      &none
                 &none      &none      &none      &none      &none      &none      &none
                 // Row 6 - Thumbs: Esc/Media, Space/Nav, Tab/Mouse | Enter/Sym, Bspc/Num, Del/Fun
-                &lt MEDIA ESC &lt NAV SPACE &lt MOUSE TAB &mkp RCLK &lt_hp VI SPACE &mkp LCLK &none
+                &lt MEDIA ESC &lt NAV SPACE &lt MOUSE TAB &mkp RCLK &lt_hp VI SPACE &lt_mkp SCROLL LCLK &none
                 &lt SYM RET &lt NUM BSPC &lt FUN DEL &none  &none      &none      &none
             >;
         };
@@ -272,6 +280,33 @@
                 &none      &none      &none      &none      &none      &none      &none
                 // Row 6 - mo VI held from base
                 &none      &none      &none      &none      &trans     &none      &none
+                &none      &none      &none      &none      &none      &none      &none
+            >;
+        };
+
+        // Layer 8: Scroll - Trackball scroll mode (hold 6,5)
+        scroll_layer {
+            bindings = <
+                // Row 0
+                &none      &none      &none      &none      &none      &none      &none
+                &none      &none      &none      &none      &none      &none      &none
+                // Row 1
+                &none      &none      &none      &none      &none      &none      &none
+                &none      &none      &none      &none      &none      &none      &none
+                // Row 2
+                &none      &none      &none      &none      &none      &none      &none
+                &none      &none      &none      &none      &none      &none      &none
+                // Row 3
+                &none      &none      &none      &none      &none      &none      &none
+                &none      &none      &none      &none      &none      &none      &none
+                // Row 4
+                &none      &none      &none      &none      &none      &none      &none
+                &none      &none      &none      &none      &none      &none      &none
+                // Row 5
+                &none      &none      &none      &none      &none      &none      &none
+                &none      &none      &none      &none      &none      &none      &none
+                // Row 6 - Hold passes through
+                &none      &none      &none      &none      &none      &trans     &none
                 &none      &none      &none      &none      &none      &none      &none
             >;
         };

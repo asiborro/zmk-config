@@ -7,6 +7,7 @@
 #include "peamk_r2c.dtsi"
 #include <zephyr/dt-bindings/input/input-event-codes.h>
 #include <dt-bindings/zmk/input_transform.h>
+#include <input/processors.dtsi>
 
 &bootloader_key_right {
     status = "okay";
@@ -46,6 +47,11 @@
         compatible = "zmk,input-listener";
         device = <&trackball>;
         input-processors = <&tb_transform (INPUT_TRANSFORM_XY_SWAP | INPUT_TRANSFORM_X_INVERT)>;
+
+        scroller {
+            layers = <8>;
+            input-processors = <&zip_xy_to_scroll_mapper>;
+        };
     };
 };
 
