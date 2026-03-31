@@ -35,6 +35,14 @@
 };
 
 / {
+    scroll_scaler: scroll_scaler {
+        compatible = "zmk,input-processor-scaler";
+        #input-processor-cells = <2>;
+        type = <INPUT_EV_REL>;
+        codes = <INPUT_REL_X INPUT_REL_Y>;
+        track-remainders;
+    };
+
     tb_transform: tb_transform {
         compatible = "zmk,input-processor-transform";
         #input-processor-cells = <1>;
@@ -50,7 +58,7 @@
 
         scroller {
             layers = <8>;
-            input-processors = <&zip_xy_to_scroll_mapper>;
+            input-processors = <&scroll_scaler 1 3 &zip_xy_to_scroll_mapper>;
         };
     };
 };
