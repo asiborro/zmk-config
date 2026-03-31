@@ -257,7 +257,7 @@
                 &none      &none      &none      &none      &none      &none      &none
                 // Row 1 - HJKL arrows on right home row
                 &none      &none      &none      &none      &none      &none      &none
-                &kp LEFT   &kp DOWN   &kp UP     &kp RIGHT  &none      &none      &none
+                &kp H      &kp J      &kp K      &kp L      &none      &none      &none
                 // Row 2
                 &none      &none      &none      &none      &none      &none      &none
                 &none      &none      &none      &none      &none      &none      &none
