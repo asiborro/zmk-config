@@ -12,6 +12,7 @@
 #include <dt-bindings/zmk/rgb.h>
 #include <dt-bindings/zmk/outputs.h>
 #include <dt-bindings/zmk/ext_power.h>
+#include <dt-bindings/zmk/mouse.h>
 
 #define BASE 0
 #define NAV  1
@@ -81,7 +82,7 @@
                 &none      &none      &none      &none      &none      &none      &none
                 &none      &none      &none      &none      &none      &none      &none
                 // Row 6 - Thumbs: Esc/Media, Space/Nav, Tab/Mouse | Enter/Sym, Bspc/Num, Del/Fun
-                &lt MEDIA ESC &lt NAV SPACE &lt MOUSE TAB &none &mo VI &none     &none
+                &lt MEDIA ESC &lt NAV SPACE &lt MOUSE TAB &mkp RCLK &mo VI &mkp LCLK &none
                 &lt SYM RET &lt NUM BSPC &lt FUN DEL &none  &none      &none      &none
             >;
         };
