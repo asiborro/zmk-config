@@ -90,7 +90,7 @@
                 &none      &none      &none      &none      &none      &none      &none
                 &none      &none      &none      &none      &none      &none      &none
                 // Row 6 - Thumbs: Esc/Media, Space/Nav, Tab/Mouse | Del/Fun, Enter/Sym, Bspc/Num
-                &lt MEDIA ESC &lt NAV SPACE &lt MOUSE TAB &mkp RCLK &lt_hp VI SPACE &lt_mkp SCROLL LCLK &none
+                &lt MEDIA ESC &lt NAV SPACE &lt MOUSE TAB &lt_mkp SCROLL RCLK &lt_hp VI SPACE &mkp LCLK &none
                 &lt FUN DEL &lt SYM RET &lt NUM BSPC &none  &none      &none      &none
             >;
         };
@@ -284,7 +284,7 @@
             >;
         };
 
-        // Layer 8: Scroll - Trackball scroll mode (hold 6,5)
+        // Layer 8: Scroll - Trackball scroll mode (hold 6,3)
         scroll_layer {
             bindings = <
                 // Row 0
@@ -306,7 +306,7 @@
                 &none      &none      &none      &none      &none      &none      &none
                 &none      &none      &none      &none      &none      &none      &none
                 // Row 6 - Hold passes through
-                &none      &none      &none      &none      &none      &trans     &none
+                &none      &none      &none      &trans     &none      &none      &none
                 &none      &none      &none      &none      &none      &none      &none
             >;
         };
