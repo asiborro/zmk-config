@@ -24,10 +24,10 @@ jobs:
             artifact: reset
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Cache west modules
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             modules/
@@ -52,7 +52,7 @@ jobs:
             -DZMK_CONFIG="${GITHUB_WORKSPACE}/config"
 
       - name: Upload firmware
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.artifact }}
           path: build/zephyr/zmk.uf2
