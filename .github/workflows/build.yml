@@ -25,7 +25,7 @@ jobs:
       builds: ${{ steps.matrix.outputs.builds }}
     steps:
       - uses: actions/checkout@v7.0.1
-      - name: Check battery display reader
+      - name: Check battery readers and monitoring
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - name: Read build.yaml
         id: matrix
@@ -95,6 +95,8 @@ jobs:
             build/zephyr/zmk.uf2
             build/zephyr/zephyr.dts
             build/zephyr/.config
+            build/zephyr/zmk.map
+            build/zephyr/zmk.elf
             build/manifest-frozen.yml
           include-hidden-files: true
           if-no-files-found: error
