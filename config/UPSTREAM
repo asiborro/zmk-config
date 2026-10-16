@@ -1,0 +1,18 @@
+Cosmos board and boot-key support
+
+Source: https://github.com/rianadon/zmk
+Revision: 4fc05c26b8faa35081282d58abc84fb6bd1b52bd
+License: MIT; see LICENSE-ZMK and individual file headers.
+
+boards/arm/cosmos_lemon_wireless/ is copied unchanged from app/boards/arm/
+in that revision. Both the original and v4 hardware definitions are retained.
+dts/bindings/zmk,boot-magic-key.yaml is copied from app/dts/bindings/.
+The boot-key Kconfig options are copied from app/Kconfig.
+src/boot_magic_key.c is based on app/src/boot_magic_key.c, with the bond
+clearing implementation from app/src/ble.c. It uses Zephyr sys_reboot and
+ZMK v0.3 reset constants instead of the fork-only zmk_reset API. Bootloader
+entry, the 500 ms startup window, and optional bond clearing are preserved.
+Its SYS_INIT callback uses the Zephyr 3.5 no-argument signature.
+
+The local module allows official ZMK v0.3.0 to build this hardware without
+depending on a fork of the entire firmware.
