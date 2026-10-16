@@ -62,6 +62,7 @@ def database(path):
         "sequence": "INTEGER", "power_age_seconds": "INTEGER",
         "estimated_level": "REAL", "estimate_method": "TEXT",
         "reporting_state": "TEXT", "power_source": "TEXT", "leds_source": "TEXT",
+        "telemetry_version": "INTEGER", "reported_usb": "INTEGER",
     }
     with connection:
         for name, definition in additions.items():
@@ -113,13 +114,16 @@ def collect(connection, reader, now=None):
             extra = dict(telemetry=int(telemetry is not None), voltage_mv=None, raw_voltage_mv=None,
                          source_age_seconds=None, relay_age_seconds=None, sequence=None,
                          power_age_seconds=None, estimated_level=None, estimate_method="legacy",
-                         reporting_state="unavailable", power_source="annotation", leds_source="annotation")
+                         reporting_state="unavailable", power_source="annotation", leds_source="annotation",
+                         telemetry_version=None, reported_usb=None)
             if telemetry is not None:
                 extra.update(voltage_mv=telemetry.get("voltage_mv"), raw_voltage_mv=telemetry.get("raw_voltage_mv"),
                              source_age_seconds=telemetry.get("source_age"), relay_age_seconds=telemetry.get("relay_age"),
                              sequence=telemetry.get("sequence"), power_age_seconds=telemetry.get("power_age"),
                              estimated_level=telemetry.get("estimate"), estimate_method=telemetry.get("method"),
-                             reporting_state=telemetry["state"], power_source="firmware", leds_source="firmware")
+                             reporting_state=telemetry["state"], power_source=telemetry.get("power_source", "unknown"),
+                             leds_source="firmware", telemetry_version=telemetry.get("version"),
+                             reported_usb=telemetry.get("reported_usb"))
                 state["power"] = {True: "usb", False: "battery", None: "unknown"}[telemetry.get("usb")]
                 state["leds"] = {True: "on", False: "off", None: "unknown"}[telemetry.get("leds")]
                 state["brightness"] = telemetry.get("brightness")
@@ -127,6 +131,8 @@ def collect(connection, reader, now=None):
                 same = prior and prior["telemetry"] and all(
                     prior[field] == state[field] for field in ("power", "leds", "brightness", "capacity_mah"))
                 same = same and prior["estimate_method"] == extra["estimate_method"]
+                same = same and prior["power_source"] == extra["power_source"]
+                same = same and prior["telemetry_version"] == extra["telemetry_version"]
                 same = same and now - prior["timestamp"] <= INTERVAL * 2.5
                 if same and extra["sequence"] is not None and prior["sequence"] is not None:
                     same = extra["sequence"] >= prior["sequence"]
@@ -189,7 +195,7 @@ def exposition(rows, now, max_age=INTERVAL * 2):
            [({"half": row["half"]}, fresh and bool(row["eligible"])) for row in rows])
     metric("peamk_test_condition_info", "Effective conditions; firmware values override annotations.",
            [({"half": row["half"], "leds": row["leds"], "power": row["power"]}, 1) for row in rows if fresh])
-    metric("peamk_usb_power", "USB power: 1 present, 0 battery, NaN unknown; not charge completion.",
+    metric("peamk_usb_power", "Inferred/annotated power: 1 USB, 0 battery, NaN uncertain; not charge completion.",
            [({"half": row["half"]}, {"usb": 1, "battery": 0}.get(row["power"]) if fresh else None) for row in rows])
     metric("peamk_leds_enabled", "RGB state: 1 on, 0 off, NaN unknown.",
            [({"half": row["half"]}, {"on": 1, "off": 0}.get(row["leds"]) if fresh else None) for row in rows])
@@ -213,8 +219,11 @@ def exposition(rows, now, max_age=INTERVAL * 2):
     metric("peamk_reporting_state_info", "Reporting state; USB does not imply a full battery.",
            [({"half": row["half"], "state": row["reporting_state"] or "legacy"}, 1)
             for row in rows if fresh])
-    metric("peamk_condition_source_info", "Source of power and RGB values: firmware or manual annotations.",
+    metric("peamk_condition_source_info", "Source of power values: voltage-inference or manual annotation; old firmware detection was unreliable.",
            [({"half": row["half"], "source": row["power_source"] or "annotation"}, 1)
+            for row in rows if fresh])
+    metric("peamk_leds_source_info", "Source of RGB values: firmware or manual annotation.",
+           [({"half": row["half"], "source": row["leds_source"] or "annotation"}, 1)
             for row in rows if fresh])
     return "\n".join(lines) + "\n"
 

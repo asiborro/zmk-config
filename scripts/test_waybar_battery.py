@@ -69,7 +69,7 @@ class BatteryReadingsTest(unittest.TestCase):
     def test_disconnected_keyboard_does_not_read_stale_values(self):
         self.objects[self.device][battery.DEVICE]["Connected"] = False
         levels = battery.battery_levels(self.objects, lambda *_: self.fail("Unexpected read"))
-        self.assertEqual(battery.waybar_output(levels)["text"], "")
+        self.assertEqual(battery.waybar_output(levels)["text"], "PeaMK L -- R --")
 
 
 if __name__ == "__main__":

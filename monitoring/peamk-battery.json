@@ -1,9 +1,9 @@
 {
   "uid": "peamk-battery",
   "title": "PeaMK battery",
-  "description": "Per-half supply voltage, USB presence, RGB state and data freshness. Charge is unknown on USB; no current or mAh sensor is installed.",
+  "description": "Left and right battery estimates, supply voltage, inferred USB power, RGB and data freshness. Five-minute history continues while charging.",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "editable": false,
   "tags": [
     "keyboard",
@@ -24,72 +24,108 @@
   "panels": [
     {
       "id": 1,
-      "title": "Five-minute battery experiment",
+      "title": "Battery history",
       "type": "text",
       "gridPos": {
         "x": 0,
         "y": 0,
         "w": 24,
-        "h": 4
+        "h": 3
       },
       "options": {
         "mode": "markdown",
-        "content": "**Both halves sampled every 5 minutes; collection continues during USB power.**\n\nWith telemetry firmware: supply voltage (median of five ADC reads), detected USB power, RGB state/brightness, and source age are relayed through the right half. USB means **charge level and charge completion are unknown**. The supply voltage is not cell voltage while plugged in.\n\nThe charge estimate waits 2 minutes after a power change. Discharge comparisons wait 10 minutes and exclude USB, stale data and clipped 0/100% values. The default voltage curve is uncalibrated; a measured per-battery curve can be installed later. Older firmware uses manual power/LED annotations. No data is fabricated while disconnected."
+        "content": "**Both halves logged every five minutes, including while charging.** Power is inferred from supply voltage; USB means charge level and completion are unknown.\n\nCharge percentages are uncalibrated voltage estimates. LED comparisons appear after ten minutes of stable battery use; gaps mean USB, settling or unavailable readings."
       }
     },
     {
-      "id": 2,
-      "title": "Battery charge estimate \u2014 battery power only",
-      "type": "timeseries",
+      "id": 16,
+      "title": "Left battery now",
+      "type": "stat",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Filtered supply-voltage estimate. Gaps on USB, stale data, or during settling are intentional. Voltage is not a measurement of remaining mAh.",
+      "description": "Latest five-minute sample. Percentage is a voltage estimate. USB and settling are shown explicitly instead of an old percentage.",
       "gridPos": {
         "x": 0,
-        "y": 4,
-        "w": 12,
-        "h": 8
+        "y": 3,
+        "w": 6,
+        "h": 4
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "percentunit",
+          "unit": "percent",
+          "decimals": 0,
           "min": 0,
-          "noValue": "Unknown",
+          "max": 100,
+          "noValue": "Unavailable",
           "color": {
-            "mode": "palette-classic"
+            "mode": "thresholds"
           },
-          "max": 1,
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "stepAfter",
-            "lineWidth": 2,
-            "fillOpacity": 5,
-            "spanNulls": false,
-            "showPoints": "auto",
-            "axisLabel": ""
-          }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "red"
+              },
+              {
+                "value": 10,
+                "color": "orange"
+              },
+              {
+                "value": 21,
+                "color": "green"
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "101": {
+                  "text": "USB",
+                  "color": "orange"
+                },
+                "102": {
+                  "text": "Settling",
+                  "color": "blue"
+                },
+                "103": {
+                  "text": "Uncertain",
+                  "color": "gray"
+                },
+                "104": {
+                  "text": "Unavailable",
+                  "color": "gray"
+                }
+              }
+            }
+          ]
         },
         "overrides": []
       },
       "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
         },
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        }
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "value"
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_battery_estimated_ratio{job=\"peamk-battery\"}",
-          "legendFormat": "{{half}}",
-          "range": true,
+          "expr": "(100 * peamk_battery_estimated_ratio{job=\"peamk-battery\",half=\"left\"}) or on(half) (101 * peamk_reporting_state_info{job=\"peamk-battery\",half=\"left\",state=~\"usb\"}) or on(half) (102 * peamk_reporting_state_info{job=\"peamk-battery\",half=\"left\",state=~\"settling\"}) or on(half) (103 * peamk_reporting_state_info{job=\"peamk-battery\",half=\"left\",state=~\"uncertain\"}) or on(half) (104 * peamk_reporting_state_info{job=\"peamk-battery\",half=\"left\",state=~\"unavailable|stale|disconnected\"})",
+          "instant": true,
+          "range": false,
+          "legendFormat": "Left",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -99,58 +135,94 @@
       "maxDataPoints": 2000
     },
     {
-      "id": 3,
-      "title": "Battery-only comparison by LED setting",
-      "type": "timeseries",
+      "id": 17,
+      "title": "Right battery now",
+      "type": "stat",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "",
+      "description": "Latest five-minute sample. Percentage is a voltage estimate. USB and settling are shown explicitly instead of an old percentage.",
       "gridPos": {
-        "x": 12,
-        "y": 4,
-        "w": 12,
-        "h": 8
+        "x": 6,
+        "y": 3,
+        "w": 6,
+        "h": 4
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "percentunit",
+          "unit": "percent",
+          "decimals": 0,
           "min": 0,
-          "noValue": "Unknown",
+          "max": 100,
+          "noValue": "Unavailable",
           "color": {
-            "mode": "palette-classic"
+            "mode": "thresholds"
           },
-          "max": 1,
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "stepAfter",
-            "lineWidth": 2,
-            "fillOpacity": 5,
-            "spanNulls": false,
-            "showPoints": "auto",
-            "axisLabel": ""
-          }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "red"
+              },
+              {
+                "value": 10,
+                "color": "orange"
+              },
+              {
+                "value": 21,
+                "color": "green"
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "101": {
+                  "text": "USB",
+                  "color": "orange"
+                },
+                "102": {
+                  "text": "Settling",
+                  "color": "blue"
+                },
+                "103": {
+                  "text": "Uncertain",
+                  "color": "gray"
+                },
+                "104": {
+                  "text": "Unavailable",
+                  "color": "gray"
+                }
+              }
+            }
+          ]
         },
         "overrides": []
       },
       "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
         },
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        }
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "value"
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_battery_discharge_ratio{job=\"peamk-battery\"}",
-          "legendFormat": "{{half}} \u00b7 LEDs {{leds}}",
-          "range": true,
+          "expr": "(100 * peamk_battery_estimated_ratio{job=\"peamk-battery\",half=\"right\"}) or on(half) (101 * peamk_reporting_state_info{job=\"peamk-battery\",half=\"right\",state=~\"usb\"}) or on(half) (102 * peamk_reporting_state_info{job=\"peamk-battery\",half=\"right\",state=~\"settling\"}) or on(half) (103 * peamk_reporting_state_info{job=\"peamk-battery\",half=\"right\",state=~\"uncertain\"}) or on(half) (104 * peamk_reporting_state_info{job=\"peamk-battery\",half=\"right\",state=~\"unavailable|stale|disconnected\"})",
+          "instant": true,
+          "range": false,
+          "legendFormat": "Right",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -169,8 +241,8 @@
       },
       "description": "",
       "gridPos": {
-        "x": 0,
-        "y": 12,
+        "x": 12,
+        "y": 3,
         "w": 6,
         "h": 4
       },
@@ -195,6 +267,26 @@
                   "color": "green"
                 }
               }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "nan",
+                "result": {
+                  "text": "Unknown",
+                  "color": "gray"
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "Unknown",
+                  "color": "gray"
+                }
+              }
             }
           ]
         },
@@ -203,7 +295,7 @@
       "options": {
         "reduceOptions": {
           "calcs": [
-            "lastNotNull"
+            "last"
           ],
           "fields": "",
           "values": false
@@ -219,6 +311,276 @@
           "refId": "A",
           "expr": "peamk_bluetooth_connected{job=\"peamk-battery\"}",
           "legendFormat": "Bluetooth",
+          "range": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "instant": true
+        }
+      ],
+      "maxDataPoints": 2000
+    },
+    {
+      "id": 6,
+      "title": "Collection age",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Age of the most recent collection attempt. The left firmware sample may be older.",
+      "gridPos": {
+        "x": 18,
+        "y": 3,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "noValue": "Unknown",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "nan",
+                "result": {
+                  "text": "Unknown",
+                  "color": "gray"
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "Unknown",
+                  "color": "gray"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "peamk_sample_age_seconds{job=\"peamk-battery\"}",
+          "legendFormat": "Age",
+          "range": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "instant": true
+        }
+      ],
+      "maxDataPoints": 2000
+    },
+    {
+      "id": 2,
+      "title": "Battery charge estimate",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Only shown in the battery voltage range, with a fresh sample. USB, ambiguous supply voltage and settling create gaps. The default curve is not calibrated to these cells.",
+      "gridPos": {
+        "x": 0,
+        "y": 7,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "noValue": "Unknown",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "max": 1,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 5,
+            "spanNulls": false,
+            "showPoints": "always",
+            "axisLabel": "",
+            "pointSize": 3
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^left(?:$| .*)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^right(?:$| .*)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "last"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "peamk_battery_estimated_ratio{job=\"peamk-battery\"}",
+          "legendFormat": "{{half}}",
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "maxDataPoints": 2000
+    },
+    {
+      "id": 3,
+      "title": "Battery-only comparison by LED setting",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Needs ten minutes of stable battery power and known LED settings. USB, stale readings and clipped 0/100% readings are excluded. Empty until a usable comparison sample exists.",
+      "gridPos": {
+        "x": 12,
+        "y": 7,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "noValue": "Waiting for stable battery use",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "max": 1,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 5,
+            "spanNulls": false,
+            "showPoints": "always",
+            "axisLabel": "",
+            "pointSize": 3
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^left(?:$| .*)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^right(?:$| .*)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "last"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "peamk_battery_discharge_ratio{job=\"peamk-battery\"}",
+          "legendFormat": "{{half}} \u00b7 LEDs {{leds}}",
           "range": true,
           "datasource": {
             "type": "prometheus",
@@ -238,9 +600,9 @@
       },
       "description": "",
       "gridPos": {
-        "x": 6,
-        "y": 12,
-        "w": 6,
+        "x": 0,
+        "y": 15,
+        "w": 8,
         "h": 4
       },
       "fieldConfig": {
@@ -264,6 +626,26 @@
                   "color": "green"
                 }
               }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "nan",
+                "result": {
+                  "text": "Unknown",
+                  "color": "gray"
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "Unknown",
+                  "color": "gray"
+                }
+              }
             }
           ]
         },
@@ -272,7 +654,7 @@
       "options": {
         "reduceOptions": {
           "calcs": [
-            "lastNotNull"
+            "last"
           ],
           "fields": "",
           "values": false
@@ -288,65 +670,12 @@
           "refId": "A",
           "expr": "peamk_battery_read_success{job=\"peamk-battery\"}",
           "legendFormat": "{{half}}",
-          "range": true,
+          "range": false,
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
-          }
-        }
-      ],
-      "maxDataPoints": 2000
-    },
-    {
-      "id": 6,
-      "title": "Collection age",
-      "type": "stat",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "description": "Age of the most recent collection attempt. The left firmware sample may be older.",
-      "gridPos": {
-        "x": 12,
-        "y": 12,
-        "w": 6,
-        "h": 4
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "min": 0,
-          "noValue": "Unknown",
-          "color": {
-            "mode": "palette-classic"
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "textMode": "auto"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "peamk_sample_age_seconds{job=\"peamk-battery\"}",
-          "legendFormat": "Age",
-          "range": true,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          }
+          },
+          "instant": true
         }
       ],
       "maxDataPoints": 2000
@@ -361,26 +690,49 @@
       },
       "description": "",
       "gridPos": {
-        "x": 18,
-        "y": 12,
-        "w": 6,
+        "x": 8,
+        "y": 15,
+        "w": 8,
         "h": 4
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "suffix: Ah",
+          "unit": "suffix: mAh",
           "min": 0,
           "noValue": "Unknown",
           "color": {
             "mode": "palette-classic"
-          }
+          },
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "nan",
+                "result": {
+                  "text": "Unknown",
+                  "color": "gray"
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "Unknown",
+                  "color": "gray"
+                }
+              }
+            }
+          ],
+          "decimals": 0
         },
         "overrides": []
       },
       "options": {
         "reduceOptions": {
           "calcs": [
-            "lastNotNull"
+            "last"
           ],
           "fields": "",
           "values": false
@@ -394,9 +746,88 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_battery_capacity_coulombs{job=\"peamk-battery\"} / 3600",
+          "expr": "peamk_battery_capacity_coulombs{job=\"peamk-battery\"} / 3.6",
           "legendFormat": "{{half}}",
-          "range": true,
+          "range": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "instant": true
+        }
+      ],
+      "maxDataPoints": 2000
+    },
+    {
+      "id": 18,
+      "title": "Latest supply voltage",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "On USB this is system supply voltage, not the battery terminal voltage.",
+      "gridPos": {
+        "x": 16,
+        "y": 15,
+        "w": 8,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "volt",
+          "min": 0,
+          "noValue": "Unknown",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "nan",
+                "result": {
+                  "text": "Unknown",
+                  "color": "gray"
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "Unknown",
+                  "color": "gray"
+                }
+              }
+            }
+          ],
+          "decimals": 3
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "peamk_supply_voltage_volts{job=\"peamk-battery\"}",
+          "instant": true,
+          "range": false,
+          "legendFormat": "{{half}}",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -407,16 +838,16 @@
     },
     {
       "id": 8,
-      "title": "USB power \u2014 charge completion unknown",
+      "title": "Power source (voltage estimate)",
       "type": "state-timeline",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Detected by telemetry firmware; manual annotation on older firmware. USB present does not establish charging current, switch position or full charge. Source is shown below; older firmware uses manual annotations.",
+      "description": "At least 4.4 V suggests USB; at most 4.25 V suggests battery; the gap is uncertain. A sagging USB supply can overlap battery voltage. Earlier firmware VBUS labels were unreliable and are excluded here. This cannot measure charging current or completion.",
       "gridPos": {
         "x": 0,
-        "y": 16,
+        "y": 19,
         "w": 12,
         "h": 6
       },
@@ -441,6 +872,26 @@
                   "color": "orange"
                 }
               }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "nan",
+                "result": {
+                  "text": "Unknown",
+                  "color": "gray"
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "Unknown",
+                  "color": "gray"
+                }
+              }
             }
           ]
         },
@@ -462,7 +913,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_usb_power{job=\"peamk-battery\"}",
+          "expr": "peamk_usb_power{job=\"peamk-battery\"} and on(half) peamk_condition_source_info{job=\"peamk-battery\",source=~\"voltage-inference|annotation\"}",
           "legendFormat": "{{half}}",
           "range": true,
           "datasource": {
@@ -481,10 +932,10 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": " Source is shown below; older firmware uses manual annotations.",
+      "description": "Reported by each half; manual annotations are used only with firmware without telemetry.",
       "gridPos": {
         "x": 12,
-        "y": 16,
+        "y": 19,
         "w": 12,
         "h": 6
       },
@@ -507,6 +958,26 @@
                 "1": {
                   "text": "On",
                   "color": "yellow"
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "nan",
+                "result": {
+                  "text": "Unknown",
+                  "color": "gray"
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "Unknown",
+                  "color": "gray"
                 }
               }
             }
@@ -549,10 +1020,10 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": " Source is shown below; older firmware uses manual annotations.",
+      "description": "Reported by each half; manual annotations are used only with firmware without telemetry.",
       "gridPos": {
         "x": 0,
-        "y": 22,
+        "y": 25,
         "w": 12,
         "h": 6
       },
@@ -571,11 +1042,43 @@
             "lineWidth": 2,
             "fillOpacity": 5,
             "spanNulls": false,
-            "showPoints": "auto",
-            "axisLabel": ""
+            "showPoints": "always",
+            "axisLabel": "",
+            "pointSize": 3
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^left(?:$| .*)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^right(?:$| .*)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "tooltip": {
@@ -583,9 +1086,12 @@
           "sort": "none"
         },
         "legend": {
-          "displayMode": "list",
+          "displayMode": "table",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": true,
+          "calcs": [
+            "last"
+          ]
         }
       },
       "targets": [
@@ -613,7 +1119,7 @@
       "description": "",
       "gridPos": {
         "x": 12,
-        "y": 22,
+        "y": 25,
         "w": 12,
         "h": 6
       },
@@ -632,11 +1138,43 @@
             "lineWidth": 2,
             "fillOpacity": 5,
             "spanNulls": false,
-            "showPoints": "auto",
-            "axisLabel": ""
+            "showPoints": "always",
+            "axisLabel": "",
+            "pointSize": 3
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^left(?:$| .*)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^right(?:$| .*)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "tooltip": {
@@ -644,9 +1182,12 @@
           "sort": "none"
         },
         "legend": {
-          "displayMode": "list",
+          "displayMode": "table",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": true,
+          "calcs": [
+            "last"
+          ]
         }
       },
       "targets": [
@@ -674,7 +1215,7 @@
       "description": "Median-filtered VDDH in volts. On battery this approximates cell voltage under load; on USB it is charger/system output.",
       "gridPos": {
         "x": 0,
-        "y": 28,
+        "y": 31,
         "w": 12,
         "h": 8
       },
@@ -693,11 +1234,43 @@
             "lineWidth": 2,
             "fillOpacity": 5,
             "spanNulls": false,
-            "showPoints": "auto",
-            "axisLabel": ""
+            "showPoints": "always",
+            "axisLabel": "",
+            "pointSize": 3
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^left(?:$| .*)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^right(?:$| .*)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "tooltip": {
@@ -705,9 +1278,12 @@
           "sort": "none"
         },
         "legend": {
-          "displayMode": "list",
+          "displayMode": "table",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": true,
+          "calcs": [
+            "last"
+          ]
         }
       },
       "targets": [
@@ -732,10 +1308,10 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Includes the peripheral-to-central relay delay; samples older than 180 seconds are excluded from charge estimates.",
+      "description": "Sample age at the last collection, including relay delay. Waybar refreshes every five seconds; this dashboard records five-minute samples. Samples older than 180 seconds cannot produce a charge estimate.",
       "gridPos": {
         "x": 12,
-        "y": 28,
+        "y": 31,
         "w": 12,
         "h": 8
       },
@@ -753,11 +1329,43 @@
             "lineWidth": 2,
             "fillOpacity": 5,
             "spanNulls": false,
-            "showPoints": "auto",
-            "axisLabel": ""
+            "showPoints": "always",
+            "axisLabel": "",
+            "pointSize": 3
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^left(?:$| .*)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^right(?:$| .*)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "tooltip": {
@@ -765,9 +1373,12 @@
           "sort": "none"
         },
         "legend": {
-          "displayMode": "list",
+          "displayMode": "table",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": true,
+          "calcs": [
+            "last"
+          ]
         }
       },
       "targets": [
@@ -795,7 +1406,7 @@
       "description": "Unmodified standard battery service values. USB can produce 100%; old left values may be cached. Not used as a charge indication on USB.",
       "gridPos": {
         "x": 0,
-        "y": 36,
+        "y": 39,
         "w": 12,
         "h": 8
       },
@@ -814,11 +1425,43 @@
             "lineWidth": 2,
             "fillOpacity": 5,
             "spanNulls": false,
-            "showPoints": "auto",
-            "axisLabel": ""
+            "showPoints": "always",
+            "axisLabel": "",
+            "pointSize": 3
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^left(?:$| .*)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^right(?:$| .*)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "tooltip": {
@@ -826,9 +1469,12 @@
           "sort": "none"
         },
         "legend": {
-          "displayMode": "list",
+          "displayMode": "table",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": true,
+          "calcs": [
+            "last"
+          ]
         }
       },
       "targets": [
@@ -847,11 +1493,11 @@
     },
     {
       "id": 15,
-      "title": "Reporting state and data source",
+      "title": "Current state and power source",
       "type": "table",
       "gridPos": {
         "x": 12,
-        "y": 36,
+        "y": 39,
         "w": 12,
         "h": 8
       },
@@ -862,24 +1508,48 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_reporting_state_info{job=\"peamk-battery\"}",
+          "expr": "peamk_reporting_state_info{job=\"peamk-battery\"} * on(half) group_left(source) peamk_condition_source_info{job=\"peamk-battery\"}",
           "instant": true,
-          "format": "table"
-        },
-        {
-          "refId": "B",
-          "expr": "peamk_condition_source_info{job=\"peamk-battery\"}",
-          "instant": true,
+          "range": false,
           "format": "table"
         }
       ],
       "options": {
-        "showHeader": true
+        "showHeader": true,
+        "cellHeight": "md",
+        "footer": {
+          "show": false
+        }
       },
       "fieldConfig": {
         "defaults": {},
         "overrides": []
-      }
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true,
+              "__name__": true,
+              "instance": true,
+              "job": true,
+              "keyboard": true
+            },
+            "indexByName": {
+              "half": 0,
+              "state": 1,
+              "source": 2
+            },
+            "renameByName": {
+              "half": "Half",
+              "state": "State",
+              "source": "Power source"
+            }
+          }
+        }
+      ]
     }
   ]
 }

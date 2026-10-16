@@ -1,0 +1,12 @@
+// Merge this module into the existing Waybar config and add
+// "custom/peamk-battery" to modules-right. The installer supplies the CSS.
+{
+    "custom/peamk-battery": {
+        "exec": "python3 ~/.config/waybar/scripts/waybar-battery.py",
+        "return-type": "json",
+        "interval": 5,
+        "format": "{}",
+        "tooltip": true,
+        "escape": true
+    }
+}

@@ -59,20 +59,19 @@ Use `peamk_r2c_left` and a separate build directory for the left side. The
 ## Left and right battery levels
 
 For five-minute history, Prometheus/Grafana tracking, and LED-on/off comparisons,
-see [battery monitoring](monitoring/README.md). This runs on the Linux computer
-and needs no firmware change.
+see [battery monitoring](monitoring/README.md). The logger runs on Linux;
+the detailed voltage, RGB and sample-age readings require telemetry firmware.
 
 Only the right half pairs with the computer. It reports its own battery and
 relays the left half's battery over that same Bluetooth connection. The right
 configuration enables ZMK's peripheral battery fetching and proxy service.
 The left half continues to connect only to the right.
 
-For this battery-reporting update, reflash the **right** half. The left firmware
-from the previous update already reports its battery to the central and does
-not need reflashing. Percentages are estimates from voltage and update about
-once per minute while the keyboard is active; the proxy retains the last
-reported left reading. Most desktop battery widgets show only one of the two
-services.
+Flash **both halves** for the latest five-second telemetry and corrected power
+inference. The reader also supports the previous one-minute telemetry firmware.
+Percentages are estimates from voltage. USB power is inferred from the supply
+voltage; charge level and completion cannot be measured while on USB. Most
+desktop battery widgets still show only one of the original battery services.
 
 [`scripts/waybar-battery.py`](scripts/waybar-battery.py) reads both services from
 the existing BlueZ connection and emits Waybar JSON with explicit `L` and `R`
@@ -87,12 +86,16 @@ Copy it to `~/.config/waybar/scripts/waybar-battery.py`, add
 "custom/peamk-battery": {
     "exec": "python3 ~/.config/waybar/scripts/waybar-battery.py",
     "return-type": "json",
-    "interval": 60,
-    "format": " {} ",
+    "interval": 5,
+    "format": "{}",
     "tooltip": true,
     "escape": true
 }
 ```
+
+`monitoring/install-local.sh` also installs the matching battery stylesheet
+when the Waybar scripts directory exists. It preserves a minimum width even
+when the keyboard is disconnected. See the monitoring guide for installation.
 
 After flashing, reconnect the right half if the additional service is not
 discovered. Keep both halves awake long enough for a battery update. The

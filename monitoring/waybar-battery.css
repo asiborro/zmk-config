@@ -1,0 +1,22 @@
+/* Match this desktop's existing Waybar modules. Keep the L/R widget stable
+ * when a percentage changes to USB, waiting, or an unavailable reading. */
+#custom-peamk-battery {
+    background: #1e1e2e;
+    opacity: 0.8;
+    padding: 0px 10px;
+    margin: 0px 10px 0px 0px;
+    margin-top: 10px;
+    border: 1px solid #181825;
+    border-radius: 10px;
+    min-width: 210px;
+    color: #a6e3a1;
+}
+
+#custom-peamk-battery.warning {
+    color: #FFA500;
+}
+
+#custom-peamk-battery.disconnected,
+#custom-peamk-battery.unavailable {
+    color: #a6adc8;
+}

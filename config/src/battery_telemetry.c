@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: MIT */
 /* Protocol and measurement limitations: monitoring/README.md. */
 #include <errno.h>
-#include <hal/nrf_power.h>
 #include <string.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/gatt.h>
@@ -22,6 +21,9 @@
 #define LED_ON BIT(3)
 #define LED_KNOWN BIT(4)
 #define CONNECTED BIT(5)
+#define BATTERY_MAX_MV 4250
+#define USB_MIN_MV 4400
+enum power_source { POWER_UNKNOWN, POWER_BATTERY, POWER_USB };
 
 static struct bt_uuid_128 service_uuid = BT_UUID_INIT_128(TELEMETRY_UUID(0));
 static struct bt_uuid_128 local_uuid = BT_UUID_INIT_128(TELEMETRY_UUID(1));
@@ -38,43 +40,43 @@ static struct {
   int64_t sampled_at;
   int64_t power_changed_at;
   bool valid;
-  bool sampled_usb;
-  bool usb;
+  enum power_source power;
 } local;
 
 static uint16_t age_seconds(int64_t since) {
   return MIN((k_uptime_get() - since) / 1000, UINT16_MAX);
 }
 
-/* Reading VBUS directly also works on the peripheral and on a USB charger
- * without USB enumeration. It does NOT detect charging current or completion.
+/* The MS88SF21 module ties VBUS to VDDH, so VBUSDETECT also asserts on
+ * battery. Infer USB only above the Li-ion voltage range. This measures the
+ * charger's system output, not the cell; a sagging USB supply can overlap
+ * battery voltage. No charging/completion signal is connected to the MCU.
  */
-static bool usb_present(void) {
-  return nrf_power_usbregstatus_vbusdet_get(NRF_POWER);
+static enum power_source supply_power(uint16_t mv) {
+  return mv >= USB_MIN_MV ? POWER_USB :
+         mv <= BATTERY_MAX_MV ? POWER_BATTERY : POWER_UNKNOWN;
 }
 
 /* Called only while holding snapshot_lock. */
-static void update_power(bool usb) {
-  if (usb != local.usb) {
-    local.usb = usb;
+static void update_power(enum power_source power) {
+  if (power != local.power) {
+    local.power = power;
     local.power_changed_at = k_uptime_get();
-    local.valid = false;
   }
 }
 
 static void local_packet(uint8_t packet[PACKET_SIZE]) {
   memset(packet, 0, PACKET_SIZE);
-  packet[0] = 1;
-  packet[1] = CONNECTED | USB_KNOWN;
+  packet[0] = 2;
+  packet[1] = CONNECTED;
   packet[2] = UINT8_MAX;
   packet[3] = 0; /* Metadata age; the central adds relay delay. */
   k_spinlock_key_t key = k_spin_lock(&snapshot_lock);
-  update_power(usb_present());
-  if (local.usb) {
-    packet[1] |= USB;
-  }
-  if (local.valid && local.sampled_usb == local.usb) {
+  if (local.valid) {
     packet[1] |= VALID;
+    if (local.power != POWER_UNKNOWN) {
+      packet[1] |= USB_KNOWN | (local.power == POWER_USB ? USB : 0);
+    }
   }
   sys_put_le16(local.millivolts, packet + 4);
   sys_put_le16(local.sequence ? age_seconds(local.sampled_at) : UINT16_MAX,
@@ -95,7 +97,6 @@ static void local_packet(uint8_t packet[PACKET_SIZE]) {
 static void sample_work_handler(struct k_work *work) {
   uint16_t samples[5];
   uint16_t raw = 0;
-  bool usb = usb_present();
   bool valid = device_is_ready(battery);
   /* This is ZMK's battery work queue too, so ADC access cannot race its
    * battery sampler. Never perform ADC I/O from a Bluetooth callback. */
@@ -125,12 +126,11 @@ static void sample_work_handler(struct k_work *work) {
     }
   }
   k_spinlock_key_t key = k_spin_lock(&snapshot_lock);
-  update_power(usb_present());
-  local.valid = valid && usb == local.usb;
+  update_power(valid ? supply_power(samples[2]) : POWER_UNKNOWN);
+  local.valid = valid;
   if (local.valid) {
     local.millivolts = samples[2];
     local.raw_millivolts = raw;
-    local.sampled_usb = usb;
     local.sampled_at = k_uptime_get();
     local.sequence++;
   }
@@ -155,7 +155,8 @@ static uint8_t peer_read_complete(struct bt_conn *conn, uint8_t err,
   struct bt_conn *release;
   k_spinlock_key_t key = k_spin_lock(&snapshot_lock);
   if (!err && data && length == PACKET_SIZE &&
-      ((const uint8_t *)data)[0] == 1 && peer_connected &&
+      (((const uint8_t *)data)[0] == 1 || ((const uint8_t *)data)[0] == 2) &&
+      peer_connected &&
       request_generation == peer_generation) {
     memcpy(peer_packet_cache, data, PACKET_SIZE);
     peer_received_at = k_uptime_get();
@@ -242,8 +243,7 @@ BT_CONN_CB_DEFINE(peamk_telemetry_connections) = {
 static void remote_packet(uint8_t packet[PACKET_SIZE]) {
   k_spinlock_key_t key = k_spin_lock(&snapshot_lock);
   memcpy(packet, peer_packet_cache, PACKET_SIZE);
-  packet[0] = 1;
-  if (peer_connected && peer_packet_cache[0] == 1) {
+  if (peer_connected && (peer_packet_cache[0] == 1 || peer_packet_cache[0] == 2)) {
     uint32_t elapsed = age_seconds(peer_received_at);
     packet[3] = MIN(UINT8_MAX, packet[3] + elapsed);
     sys_put_le16(MIN(UINT16_MAX, sys_get_le16(packet + 6) + elapsed),
@@ -251,6 +251,7 @@ static void remote_packet(uint8_t packet[PACKET_SIZE]) {
     sys_put_le16(MIN(UINT16_MAX, sys_get_le16(packet + 12) + elapsed),
                  packet + 12);
   } else {
+    packet[0] = 2;
     packet[1] = peer_connected ? CONNECTED : 0;
     packet[2] = UINT8_MAX;
     sys_put_le16(UINT16_MAX, packet + 6);
@@ -297,11 +298,10 @@ static void tick(struct k_timer *timer) {
 K_TIMER_DEFINE(telemetry_timer, tick, NULL);
 
 static int telemetry_init(void) {
-  local.usb = usb_present();
   local.power_changed_at = k_uptime_get();
   /* Continue sampling in idle; the timer naturally stops in deep power-off.
    * Reading telemetry never marks the keyboard active or prevents sleep. */
-  k_timer_start(&telemetry_timer, K_SECONDS(3), K_SECONDS(60));
+  k_timer_start(&telemetry_timer, K_SECONDS(3), K_SECONDS(5));
   return 0;
 }
 SYS_INIT(telemetry_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
