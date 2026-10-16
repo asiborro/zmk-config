@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import hashlib
 import os
 from pathlib import Path
 import struct
@@ -63,7 +64,8 @@ def decode_telemetry(value, points=None):
                   sequence=sequence, power_age=power_age, usb=usb, leds=leds,
                   brightness=brightness if fresh and brightness != 255 else None,
                   voltage_mv=mv if valid else None, raw_voltage_mv=raw_mv if valid else None,
-                  estimate=None, method="calibrated-curve" if points is not None else "voltage-linear")
+                  estimate=None, method=("custom-" + hashlib.sha256(json.dumps(points).encode()).hexdigest()[:12])
+                         if points is not None else "voltage-linear")
     if not connected:
         state = "disconnected"
     elif not fresh:

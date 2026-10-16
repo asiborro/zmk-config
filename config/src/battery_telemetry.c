@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: MIT */
-/* Protocol and measurement limitations: monitoring/telemetry.md. */
+/* Protocol and measurement limitations: monitoring/README.md. */
 #include <errno.h>
 #include <hal/nrf_power.h>
 #include <string.h>

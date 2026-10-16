@@ -8,6 +8,9 @@ kit_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 repo_dir=$(dirname -- "$kit_dir")
 install -d "$HOME/.local/lib/peamk-battery" "$HOME/.local/bin" "$HOME/.config/systemd/user"
 install -m 644 "$repo_dir/scripts/battery-monitor.py" "$repo_dir/scripts/waybar-battery.py" "$HOME/.local/lib/peamk-battery/"
+if [[ -d "$HOME/.config/waybar/scripts" ]]; then
+    install -m 755 "$repo_dir/scripts/waybar-battery.py" "$HOME/.config/waybar/scripts/waybar-battery.py"
+fi
 cat > "$HOME/.local/bin/peamk-battery" <<'EOF'
 #!/usr/bin/env sh
 exec /usr/bin/python3 "$HOME/.local/lib/peamk-battery/battery-monitor.py" "$@"

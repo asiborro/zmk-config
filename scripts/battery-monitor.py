@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import signal
 import sqlite3
+import statistics
 import sys
 import threading
 import time
@@ -129,7 +130,7 @@ def collect(connection, reader, now=None):
                 same = same and now - prior["timestamp"] <= INTERVAL * 2.5
                 if same and extra["sequence"] is not None and prior["sequence"] is not None:
                     same = extra["sequence"] >= prior["sequence"]
-                state["since"] = prior["condition_since"] if same else now
+                state["since"] = max(prior["condition_since"], state["since"]) if same else now
                 power_age = extra["power_age_seconds"]
                 if power_age is not None and power_age < 65535 and now - power_age > state["since"] + 120:
                     state["since"] = now - power_age
@@ -181,19 +182,19 @@ def exposition(rows, now, max_age=INTERVAL * 2):
             if row["telemetry"] else row["level"] is not None)) for row in rows])
     metric("peamk_battery_reported_ratio", "Raw voltage-derived estimate; USB may force 1; left may be stale in firmware.",
            [({"half": row["half"]}, row["level"] / 100) for row in rows if fresh and row["level"] is not None])
-    metric("peamk_battery_discharge_ratio", "Annotated battery-only estimate after settling, excluding saturated 100 percent readings.",
+    metric("peamk_battery_discharge_ratio", "Battery-only estimate after settling; excludes USB, stale and clipped readings.",
            [({"half": row["half"], "leds": row["leds"]}, analysis_level(row) / 100)
             for row in rows if fresh and row["eligible"]])
     metric("peamk_discharge_sample_eligible", "One if the latest sample meets the annotated discharge comparison conditions.",
            [({"half": row["half"]}, fresh and bool(row["eligible"])) for row in rows])
     metric("peamk_test_condition_info", "Effective conditions; firmware values override annotations.",
-           [({"half": row["half"], "leds": row["leds"], "power": row["power"]}, 1) for row in rows])
+           [({"half": row["half"], "leds": row["leds"], "power": row["power"]}, 1) for row in rows if fresh])
     metric("peamk_usb_power", "USB power: 1 present, 0 battery, NaN unknown; not charge completion.",
-           [({"half": row["half"]}, {"usb": 1, "battery": 0}.get(row["power"])) for row in rows])
+           [({"half": row["half"]}, {"usb": 1, "battery": 0}.get(row["power"]) if fresh else None) for row in rows])
     metric("peamk_leds_enabled", "RGB state: 1 on, 0 off, NaN unknown.",
-           [({"half": row["half"]}, {"on": 1, "off": 0}.get(row["leds"])) for row in rows])
-    metric("peamk_led_brightness_ratio", "User-annotated brightness; NaN when unknown.",
-           [({"half": row["half"]}, None if row["brightness"] is None else row["brightness"] / 100) for row in rows])
+           [({"half": row["half"]}, {"on": 1, "off": 0}.get(row["leds"]) if fresh else None) for row in rows])
+    metric("peamk_led_brightness_ratio", "Detected or annotated RGB brightness; NaN when unknown.",
+           [({"half": row["half"]}, None if not fresh or row["brightness"] is None else row["brightness"] / 100) for row in rows])
     metric("peamk_battery_capacity_coulombs", "User-annotated nominal battery capacity (1 mAh = 3.6 coulombs).",
            [({"half": row["half"]}, row["capacity_mah"] * 3.6) for row in rows])
     metric("peamk_condition_since_timestamp_seconds", "Time the current test conditions were annotated.",
@@ -264,12 +265,17 @@ def report(connection, hours, now=None):
         if elapsed < 1:
             continue
         count += 1
-        drop = analysis_level(first) - analysis_level(last)
+        times = [(row["timestamp"] - first["timestamp"]) / 3600 for row in group]
+        drain = -statistics.linear_regression(times, [analysis_level(row) for row in group]).slope
         start = datetime.fromtimestamp(first["timestamp"], timezone.utc).isoformat(timespec="minutes")
         brightness = "unknown" if first["brightness"] is None else f"{first['brightness']}%"
         output.append(f"{start} {first['half']}, LEDs {first['leds']} (brightness {brightness}), "
                       f"{first['capacity_mah']} mAh: {analysis_level(first):g}% -> {analysis_level(last):g}% "
-                      f"in {elapsed:.2f} h ({drop / elapsed:.2f} percentage points/hour).")
+                      f"in {elapsed:.2f} h ({drain:.2f} percentage points/hour; regression over {len(group)} samples).")
+        if all(row.get("voltage_mv") is not None for row in group):
+            voltage_drain = -statistics.linear_regression(times, [row["voltage_mv"] for row in group]).slope
+            output.append(f"  Supply voltage: {first['voltage_mv']} -> {last['voltage_mv']} mV "
+                          f"({voltage_drain:.1f} mV/hour).")
     if not count:
         output.append("No uninterrupted, annotated battery-only period of at least one hour yet.")
     output.extend([

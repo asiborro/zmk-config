@@ -67,6 +67,26 @@ class TelemetryTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             reader.voltage_percent(3700, [[4200, 100], [3300, 0]])
 
+    def test_read_only_service_maps_local_to_right_and_peer_to_left(self):
+        device = "/org/bluez/hci0/dev_test"
+        service = device + "/service0090"
+        local, peer = service + "/char0092", service + "/char0094"
+        objects = {device: {reader.DEVICE: {"Alias": "PeaMK", "Connected": True}},
+                   service: {reader.SERVICE: {"UUID": reader.TELEMETRY_SERVICE}},
+                   local: {reader.CHARACTERISTIC: {"Service": service, "UUID": reader.TELEMETRY_LOCAL}},
+                   peer: {reader.CHARACTERISTIC: {"Service": service, "UUID": reader.TELEMETRY_PEER}}}
+        values = {local: packet(usb=True, mv=4950), peer: packet(mv=3900)}
+        levels = reader.battery_levels(objects, lambda path, _: values[path])
+        self.assertEqual(reader.waybar_output(levels)["text"], "PeaMK L 60% R USB")
+        values[peer] = b"bad"
+        levels = reader.battery_levels(objects, lambda path, _: values[path])
+        self.assertEqual(reader.waybar_output(levels)["text"], "PeaMK L -- R USB")
+
+    def test_curve_change_gets_a_new_estimate_method(self):
+        first = reader.decode_telemetry(packet(), [[3450, 0], [4200, 100]])
+        second = reader.decode_telemetry(packet(), [[3400, 0], [4200, 100]])
+        self.assertNotEqual(first["method"], second["method"])
+
 
 class TelemetryStorageTest(unittest.TestCase):
     def setUp(self):
@@ -130,6 +150,27 @@ class TelemetryStorageTest(unittest.TestCase):
         rows = monitor.collect(self.db, lambda: dict(connected=True, left=0, right=0), now=1000)
         self.assertEqual(rows[0]["level"], 0)
         self.assertEqual(rows[0]["eligible"], 0)
+
+    def test_stale_exporter_does_not_keep_claiming_usb_power(self):
+        rows = self.collect(1000, usb=True, mv=4950)
+        metrics = monitor.exposition(rows, 1700)
+        self.assertIn('peamk_usb_power{half="right"} NaN', metrics)
+        self.assertNotIn('peamk_reporting_state_info{', metrics)
+
+    def test_manual_experiment_note_starts_a_new_automatic_segment(self):
+        self.collect(1000)
+        self.collect(1300)
+        self.assertTrue(self.collect(1600)[0]["eligible"])
+        monitor.mark(self.db, monitor.HALVES, {}, "new experiment", now=1800)
+        self.assertFalse(self.collect(1900)[0]["eligible"])
+
+    def test_report_uses_all_samples_instead_of_only_endpoints(self):
+        monitor.mark(self.db, monitor.HALVES, {"power": "battery", "leds": "on"}, now=0)
+        for i in range(13):
+            value = 80 - i - (3 if i == 12 else 0)
+            monitor.collect(self.db, lambda: dict(connected=True, left=value, right=value), now=1000+i*300)
+        output = monitor.report(self.db, 24, now=4600)
+        self.assertIn("13.19 percentage points/hour; regression over 13 samples", output)
 
 
 if __name__ == "__main__":

@@ -10,17 +10,96 @@ has no automatic expiry and can be exported to CSV.
 The collector runs while this Linux user's services run. It starts again at
 login and restarts after failures. Switching the keyboard to the Mac, shutting
 down/suspending Linux, or disconnecting Bluetooth creates gaps; it does not
-record zero or invent readings. The left percentage may still be cached inside
-the right firmware, which does not expose its age or the left connection state.
+record zero or invent readings. The original Bluetooth percentage can be cached inside the right firmware.
+Telemetry firmware additionally exposes the left connection and sample age;
+these are used to reject stale estimates.
 Polling also means these tests include the small monitoring workload.
+
+## Telemetry firmware
+
+Flash both `cosmos-lemon-wireless-*-telemetry.uf2` images. The right relays the
+left's telemetry through its existing split connection. The left never needs
+a direct connection to the computer. Pairings and keyboard/mouse descriptors
+are preserved; the additional GATT service is appended after existing services.
+The host may need one ordinary Bluetooth reconnect to discover it.
+
+Every 60 seconds while powered and awake (including idle), each half takes five
+ADC samples on ZMK's low-priority battery queue and reports their median plus
+the last raw value. Sampling does not reset the inactivity timer; deep sleep
+still occurs after 15 minutes. The right polls left telemetry once per minute.
+The host still collects every five minutes, including during USB power.
+
+USB presence is read directly from nRF52840 VBUS detection, including on the left
+and with a charger that does not enumerate USB. **USB power does not prove the
+battery is charging or full**: neither the battery switch nor the charger CHG
+pin is exposed to this firmware. On Lemon v2, VDDH is the charger's system output,
+not a separate battery terminal measurement. The supply-voltage graph therefore
+rises on USB, while the charge-estimate graph has a gap. Waybar shows `USB`.
+The normal OS Bluetooth battery widget still reads ZMK's original percentage.
+
+Readings older than 180 seconds or from a disconnected left half cannot produce
+a charge estimate. After a power transition, estimates wait two minutes;
+discharge comparisons wait ten minutes. Detected power and RGB/brightness take
+priority over manual annotations. A change in power, LEDs, brightness, firmware
+boot, curve, or collection continuity starts a new comparison segment. Capacity
+remains a manual label. All raw history is retained, including zeros and USB.
+
+### Calculation and calibration
+
+The calculation uses the median voltage, floating-point interpolation, bounds
+of 0–100%, and rejection of stale/USB/unsettled samples. The default curve uses
+ZMK's 3450 mV and 4200 mV endpoints. **It is not calibrated to these cells**; a
+smoother graph is not evidence of more accurate remaining mAh. There is no
+current sensor and no charging-completion signal. We retain the original
+percentage for comparison instead of rewriting historical readings.
+
+A measured nonlinear curve can be installed without another firmware flash at
+`~/.config/peamk-battery/curve.json`, with `left` and/or `right` lists of
+`[millivolts, percent]` pairs in strictly increasing order. Endpoints must be
+0% and 100%. Omitted halves use the default. The file below reproduces the
+uncalibrated endpoints; replace it only with measurements appropriate to your
+cells and load, rather than another battery's chart:
+
+```json
+{"left": [[3450, 0], [4200, 100]], "right": [[3450, 0], [4200, 100]]}
+```
+
+The collector reloads the curve each sample. Waybar uses the same file and
+calculation. A curve change gets a distinct method label to avoid joining
+incompatible estimates into a drain-rate comparison. Full-charge-to-recharge
+runtime with consistent usage and LEDs remains the practical sizing test.
+
+### Read-only Bluetooth protocol v1
+
+Service UUID: `50ea0000-2f54-4e31-a2b7-6cb20f70a901`. Characteristic `50ea0001`
+(same UUID suffix) reports the local half; on the central, `50ea0002` reports
+its single left peripheral. Both require encryption. Each value is 16 bytes,
+with little-endian integers and a default-MTU-compatible payload:
+
+| Offset | Type | Meaning |
+| --- | --- | --- |
+| 0 | u8 | Version, 1 |
+| 1 | u8 | Flags: bit 0 ADC valid, 1 USB present, 2 USB known, 3 RGB on, 4 RGB known, 5 connected |
+| 2 | u8 | Configured brightness 0–100, or 255 unknown |
+| 3 | u8 | Metadata relay age in seconds, saturating at 255 |
+| 4 | u16 | Median supply millivolts |
+| 6 | u16 | ADC sample age, including relay time; 65535 unknown/saturated |
+| 8 | u32 | Successful sample counter, resets at boot |
+| 12 | u16 | Seconds since observed power-source change, saturating at 65535 |
+| 14 | u16 | Last unfiltered supply millivolts |
+
+The central clears cached peer telemetry on disconnection/reconnection and
+never reuses a pre-reconnect response. Failed/stalled reads age out. The
+host validates version, length, flags, voltage range and timestamps before
+using any values. No telemetry operation writes settings or changes RGB.
 
 ## Start and maintain a test
 
-The `peamk-battery` command **records labels only**; it cannot switch keyboard
-LEDs or detect charging. Record a change whenever plugging/unplugging either
-half or changing LEDs, brightness, battery, or usage pattern. Never assume
-USB is absent just because this computer cannot see it: a charger or the Mac
-can supply USB power too.
+With telemetry firmware, USB and RGB labels update automatically. With older
+firmware, `peamk-battery mark` records labels only and cannot detect charging.
+It remains useful for capacity and experiment notes with either firmware.
+Never infer USB absence merely because this computer cannot see it: a charger
+or Mac can supply power too.
 
 ```sh
 # After physically unplugging both halves, with LEDs on:
@@ -43,10 +122,10 @@ peamk-battery report --hours 24
 peamk-battery export > battery-history.csv
 ```
 
-Unknown conditions stay unknown. The firmware's default brightness is 15%, but
-saved keyboard settings can override it, so the collector does not assume 15%.
+Unknown conditions stay unknown. With old firmware, saved brightness is not
+available, so the collector does not assume the 15% firmware default.
 Each annotation starts a new comparison period with a ten-minute settling
-window. USB, unknown power/LED state, missing readings and saturated 100%
+window. USB, unknown power/LED state, missing readings and clipped 0%/100%
 readings remain in raw history but are excluded from discharge comparisons.
 The report also splits periods at gaps over 12.5 minutes, condition changes,
 and upward jumps greater than three percentage points. It does not average a
@@ -72,18 +151,27 @@ After deployment, the dashboard is at
 <http://ci4.test:3000/d/peamk-battery/peamk-battery>.
 
 - `peamk_battery_reported_ratio{half="left|right"}`: raw estimated charge, 0–1.
-- `peamk_battery_discharge_ratio{half,leds}`: annotated battery-only subset.
+- `peamk_battery_estimated_ratio{half,method}`: usable charge estimate, absent on USB.
+- `peamk_supply_voltage_volts{half}`: median supply voltage; not cell voltage on USB.
+- `peamk_supply_raw_voltage_volts{half}`: last unfiltered ADC sample.
+- `peamk_voltage_sample_age_seconds{half}`: actual ADC sample age including relay.
+- `peamk_reporting_state_info{half,state}`: USB/battery/settling/stale/unavailable.
+- `peamk_condition_source_info{half,source}`: firmware or manual annotation.
+- `peamk_battery_discharge_ratio{half,leds}`: usable battery-only subset.
 - `peamk_battery_read_success{half}` and `peamk_bluetooth_connected`: visibility.
 - `peamk_sample_age_seconds`: collection age, **not** the left firmware's age.
-- `peamk_test_condition_info{half,leds,power}`: manual context.
-- `peamk_led_brightness_ratio{half}`: annotated brightness, NaN if unknown.
+- `peamk_test_condition_info{half,leds,power}`: effective context (firmware takes priority).
+- `peamk_led_brightness_ratio{half}`: detected or annotated brightness, NaN if unknown.
 - `peamk_battery_capacity_coulombs{half}`: annotated capacity (2700 initially;
   divide by 3600 for Ah).
 
 Multiply ratio metrics by 100 to display percentages. Avoid `rate()` on the
 battery gauge and avoid fitting discharge slopes across USB or missing data.
-The local report uses original five-minute samples instead of counting the
-repeated one-minute Prometheus scrapes as additional measurements.
+The local report fits a linear regression through all original five-minute
+samples within each uninterrupted comparison segment, rather than using just
+two endpoints or counting repeated one-minute Prometheus scrapes as new data.
+With telemetry it also reports the voltage slope. Neither slope is a current
+measurement or a validated prediction of remaining runtime.
 
 ## Installation and operations
 

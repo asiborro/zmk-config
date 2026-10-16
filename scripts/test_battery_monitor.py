@@ -100,7 +100,7 @@ class BatteryMonitorTest(unittest.TestCase):
             self.collect(now=1000 + index * 300, left=80 - index, right=60 - index)
         output = monitor.report(self.db, 24, now=4600)
         self.assertIn("13 collection attempts", output)
-        self.assertIn("80% -> 68% in 1.00 h (12.00 percentage points/hour)", output)
+        self.assertIn("80% -> 68% in 1.00 h (12.00 percentage points/hour; regression over 13 samples)", output)
         self.assertIn("short slopes cannot establish full runtime", output)
 
 
