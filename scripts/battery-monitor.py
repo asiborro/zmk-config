@@ -111,6 +111,12 @@ def collect(connection, reader, now=None):
             if level is not None and (type(level) is not int or not 0 <= level <= 100):
                 level = None
             telemetry = levels.get("telemetry", {}).get(state["half"])
+            prior = previous.get(state["half"])
+            if telemetry is None and not levels["connected"] and prior and prior["telemetry"]:
+                # A lost host connection does not turn old manual charging
+                # annotations back into live power/RGB measurements.
+                telemetry = dict(state="disconnected" if levels["connected"] is False else "unavailable",
+                                 version=prior["telemetry_version"], power_source=prior["power_source"])
             extra = dict(telemetry=int(telemetry is not None), voltage_mv=None, raw_voltage_mv=None,
                          source_age_seconds=None, relay_age_seconds=None, sequence=None,
                          power_age_seconds=None, estimated_level=None, estimate_method="legacy",
@@ -127,7 +133,6 @@ def collect(connection, reader, now=None):
                 state["power"] = {True: "usb", False: "battery", None: "unknown"}[telemetry.get("usb")]
                 state["leds"] = {True: "on", False: "off", None: "unknown"}[telemetry.get("leds")]
                 state["brightness"] = telemetry.get("brightness")
-                prior = previous.get(state["half"])
                 same = prior and prior["telemetry"] and all(
                     prior[field] == state[field] for field in ("power", "leds", "brightness", "capacity_mah"))
                 same = same and prior["estimate_method"] == extra["estimate_method"]

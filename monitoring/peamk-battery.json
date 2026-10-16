@@ -3,7 +3,7 @@
   "title": "PeaMK battery",
   "description": "Left and right battery estimates, supply voltage, inferred USB power, RGB and data freshness. Five-minute history continues while charging.",
   "schemaVersion": 39,
-  "version": 3,
+  "version": 4,
   "editable": false,
   "tags": [
     "keyboard",
@@ -1025,7 +1025,7 @@
         "x": 0,
         "y": 25,
         "w": 12,
-        "h": 6
+        "h": 8
       },
       "fieldConfig": {
         "defaults": {
@@ -1121,7 +1121,7 @@
         "x": 12,
         "y": 25,
         "w": 12,
-        "h": 6
+        "h": 8
       },
       "fieldConfig": {
         "defaults": {
@@ -1215,7 +1215,7 @@
       "description": "Median-filtered VDDH in volts. On battery this approximates cell voltage under load; on USB it is charger/system output.",
       "gridPos": {
         "x": 0,
-        "y": 31,
+        "y": 33,
         "w": 12,
         "h": 8
       },
@@ -1311,7 +1311,7 @@
       "description": "Sample age at the last collection, including relay delay. Waybar refreshes every five seconds; this dashboard records five-minute samples. Samples older than 180 seconds cannot produce a charge estimate.",
       "gridPos": {
         "x": 12,
-        "y": 31,
+        "y": 33,
         "w": 12,
         "h": 8
       },
@@ -1406,7 +1406,7 @@
       "description": "Unmodified standard battery service values. USB can produce 100%; old left values may be cached. Not used as a charge indication on USB.",
       "gridPos": {
         "x": 0,
-        "y": 39,
+        "y": 41,
         "w": 12,
         "h": 8
       },
@@ -1497,7 +1497,7 @@
       "type": "table",
       "gridPos": {
         "x": 12,
-        "y": 39,
+        "y": 41,
         "w": 12,
         "h": 8
       },
@@ -1519,7 +1519,13 @@
         "cellHeight": "md",
         "footer": {
           "show": false
-        }
+        },
+        "sortBy": [
+          {
+            "displayName": "Half",
+            "desc": false
+          }
+        ]
       },
       "fieldConfig": {
         "defaults": {},

@@ -172,6 +172,17 @@ class TelemetryStorageTest(unittest.TestCase):
         self.assertFalse(rows[0]["eligible"])
         self.assertEqual(rows[0]["condition_since"], 1900)
 
+    def test_disconnect_does_not_restore_old_manual_usb_labels(self):
+        monitor.mark(self.db, monitor.HALVES, {"power": "usb", "leds": "on"}, now=0)
+        self.collect(1000)
+        for now in (1300, 1600):
+            rows = monitor.collect(self.db, lambda: dict(connected=False, left=None, right=None), now=now)
+            self.assertEqual(rows[0]["reporting_state"], "disconnected")
+            self.assertEqual(rows[0]["power"], "unknown")
+            self.assertEqual(rows[0]["leds"], "unknown")
+            self.assertIn('peamk_usb_power{half="left"} NaN', monitor.exposition(rows, now))
+        self.assertFalse(self.collect(1900)[0]["eligible"])
+
     def test_migration_keeps_existing_rows_and_annotations(self):
         old_path = Path(self.tmp.name) / "old.sqlite3"
         old = sqlite3.connect(old_path)
