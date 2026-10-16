@@ -10,3 +10,10 @@ config ZMK_BOOT_MAGIC_KEY
 config ZMK_BOOT_MAGIC_KEY_TIMEOUT_MS
     int "Milliseconds to wait for a boot magic key at startup"
     default 500
+
+config PEAMK_BATTERY_TELEMETRY
+    bool "PeaMK supply voltage and power-source telemetry"
+    depends on ZMK_BLE && ZMK_BATTERY && SOC_NRF52840_QIAA
+    help
+      Expose sampled VDDH voltage, USB presence, RGB state and sample age.
+      On the central, relay one split peripheral's telemetry as well.

@@ -58,6 +58,10 @@ Use `peamk_r2c_left` and a separate build directory for the left side. The
 
 ## Left and right battery levels
 
+For five-minute history, Prometheus/Grafana tracking, and LED-on/off comparisons,
+see [battery monitoring](monitoring/README.md). This runs on the Linux computer
+and needs no firmware change.
+
 Only the right half pairs with the computer. It reports its own battery and
 relays the left half's battery over that same Bluetooth connection. The right
 configuration enables ZMK's peripheral battery fetching and proxy service.
