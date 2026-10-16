@@ -3,6 +3,8 @@
 / {
   kscan0: kscan_0 {
         compatible = "zmk,kscan-gpio-matrix";
+        /* Keep key inputs available to wake either half from deep sleep. */
+        wakeup-source;
 
         diode-direction = "col2row";
         row-gpios
