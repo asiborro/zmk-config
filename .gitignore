@@ -7,3 +7,4 @@
 /bootloader/
 /zmk-pmw3610-driver/
 /artifacts/
+__pycache__/

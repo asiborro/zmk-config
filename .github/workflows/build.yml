@@ -25,6 +25,8 @@ jobs:
       builds: ${{ steps.matrix.outputs.builds }}
     steps:
       - uses: actions/checkout@v7.0.1
+      - name: Check battery display reader
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - name: Read build.yaml
         id: matrix
         run: echo "builds=$(yq -o=json -I=0 build.yaml)" >> "$GITHUB_OUTPUT"

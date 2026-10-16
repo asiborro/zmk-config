@@ -56,10 +56,51 @@ west build -s zmk/app -d build/right -b cosmos_lemon_wireless -- \
 Use `peamk_r2c_left` and a separate build directory for the left side. The
 `ZMK_EXTRA_MODULES` argument loads the local Lemon board/boot-key module.
 
+## Left and right battery levels
+
+Only the right half pairs with the computer. It reports its own battery and
+relays the left half's battery over that same Bluetooth connection. The right
+configuration enables ZMK's peripheral battery fetching and proxy service.
+The left half continues to connect only to the right.
+
+For this battery-reporting update, reflash the **right** half. The left firmware
+from the previous update already reports its battery to the central and does
+not need reflashing. Percentages are estimates from voltage and update about
+once per minute while the keyboard is active; the proxy retains the last
+reported left reading. Most desktop battery widgets show only one of the two
+services.
+
+[`scripts/waybar-battery.py`](scripts/waybar-battery.py) reads both services from
+the existing BlueZ connection and emits Waybar JSON with explicit `L` and `R`
+labels. It identifies the left service by ZMK's `Peripheral 0` descriptor, not
+by the order of Bluetooth services. Missing readings display `--`.
+It requires Python 3 and PyGObject/Gio and never pairs or connects either half.
+
+Copy it to `~/.config/waybar/scripts/waybar-battery.py`, add
+`custom/peamk-battery` to Waybar's `modules-right`, and add this module:
+
+```json
+"custom/peamk-battery": {
+    "exec": "python3 ~/.config/waybar/scripts/waybar-battery.py",
+    "return-type": "json",
+    "interval": 60,
+    "format": " {} ",
+    "tooltip": true,
+    "escape": true
+}
+```
+
+After flashing, reconnect the right half if the additional service is not
+discovered. Keep both halves awake long enough for a battery update. The
+reader's tests run with `python3 -m unittest discover -s scripts -p 'test_*.py'`.
+
 ## Trackball failure with the physical switch on
 
-The reported switch-related failure has **not been reproduced or confirmed
-fixed** by this firmware update. The physical switch controls the battery
+The owner reported the keyboard and trackball working after flashing the
+ZMK/Inorichi update on 2026-10-16. The original failure's exact cause was not
+isolated. The following diagnostics are retained in case it returns.
+
+The physical switch controls the battery
 charger's SYSOFF input; it is not a firmware Bluetooth-output selector.
 On the published Lemon schematics, the VIK 3.3 V supply comes from its own
 regulator. ZMK's `ext_power` controls the LED supply, so changing RGB power
