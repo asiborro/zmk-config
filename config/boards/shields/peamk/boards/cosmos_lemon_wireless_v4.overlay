@@ -1,0 +1,2 @@
+// Both board revisions use the same RGB data pin and SPI wiring.
+#include "cosmos_lemon_wireless.overlay"

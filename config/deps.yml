@@ -1,9 +1,9 @@
 manifest:
   remotes:
-    - name: rianadon
-      url-base: https://github.com/rianadon
+    - name: inorichi
+      url-base: https://github.com/inorichi
   projects:
-    - name: zmk-fingerpunch-vik
-      remote: rianadon
-      revision: main
-      import: config/deps.yml
+    # Cosmos-recommended PMW3610 driver, pinned for reproducible builds.
+    - name: zmk-pmw3610-driver
+      remote: inorichi
+      revision: 1d9c2c68ca76012e1b1e5f6ef02fa5eadc4ca399

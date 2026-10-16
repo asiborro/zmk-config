@@ -1,0 +1,91 @@
+# Cosmos Lemon Wireless firmware
+
+ZMK configuration for a split Cosmos keyboard with a PMW3610 trackball on
+the **right (central)** half. The existing Colemak-DH keymap, mouse transform,
+scroll layer, and boot keys are retained.
+
+## Firmware versions
+
+- ZMK **v0.3.0**, the latest published stable release checked on 2026-10-16.
+- Cosmos-recommended [Inorichi PMW3610 driver](https://github.com/inorichi/zmk-pmw3610-driver)
+  pinned to `1d9c2c68ca76012e1b1e5f6ef02fa5eadc4ca399`.
+- Zephyr 3.5 build image pinned by digest to match this ZMK release.
+- Local Lemon board and boot-key module; provenance and license are in
+  [`config/UPSTREAM`](config/UPSTREAM) and [`config/LICENSE-ZMK`](config/LICENSE-ZMK).
+
+The trackball is configured directly in the right shield. The older VIK
+add-on is unnecessary and is no longer imported.
+
+## Build and flash
+
+GitHub Actions reads [`build.yaml`](build.yaml) on pushes to `main` and pull
+requests. Each artifact includes `zmk.uf2`, the compiled devicetree and
+Kconfig settings, and a manifest recording exact dependency revisions.
+
+| Artifact prefix | Purpose |
+| --- | --- |
+| `left-` | Left peripheral firmware |
+| `right-` | Right central firmware with trackball |
+| `reset-` | Optional recovery image; clears saved settings and pairings |
+| `right-debug-` | Right firmware with USB sensor diagnostics |
+
+This keyboard uses **v0.2 (v2) Lemon Wireless controllers**. All automatic
+builds select `cosmos_lemon_wireless`, the target for v0.3 and earlier. The board
+name is appended to artifact names.
+
+The upstream board files also include `cosmos_lemon_wireless_v4` for v0.4
+controllers, which use the opposite LED-power control polarity. That optional
+target is available under **Run workflow**, but is not used by this keyboard.
+
+Flash the matching left and right UF2 files to the corresponding `LEMONBOOT`
+drives after double-tapping each controller's reset button. Use normal firmware
+for everyday battery operation. The reset image is for recovery, not a required
+step in this update; flashing it erases existing pairings.
+
+For a local build with the Zephyr 3.5 toolchain, run from this repository:
+
+```sh
+west init -l config
+west update --fetch-opt=--filter=tree:0
+west zephyr-export
+west build -s zmk/app -d build/right -b cosmos_lemon_wireless -- \
+  -DSHIELD=peamk_r2c_right \
+  -DZMK_CONFIG="$PWD/config" -DZMK_EXTRA_MODULES="$PWD/config"
+```
+
+Use `peamk_r2c_left` and a separate build directory for the left side. The
+`ZMK_EXTRA_MODULES` argument loads the local Lemon board/boot-key module.
+
+## Trackball failure with the physical switch on
+
+The reported switch-related failure has **not been reproduced or confirmed
+fixed** by this firmware update. The physical switch controls the battery
+charger's SYSOFF input; it is not a firmware Bluetooth-output selector.
+On the published Lemon schematics, the VIK 3.3 V supply comes from its own
+regulator. ZMK's `ext_power` controls the LED supply, so changing RGB power
+settings does not directly switch the standard VIK trackball supply.
+
+To distinguish a sensor startup failure from a failure while running:
+
+1. Flash the `right-debug-<matching-board>` image on the right half.
+2. Connect it over USB and open its serial console (for example, `tio
+   /dev/ttyACM0` on Linux; choose the device assigned to this keyboard).
+3. Reset with the physical switch off, then reset with it on. Keep the same
+   USB cable and output selection. Save both logs, including startup messages.
+4. Also test switching on after the trackball has started working, without
+   resetting. Note whether tracking stops immediately or fails only after boot.
+
+Look for `PMW3610 initialized`, `Incorrect product id`, `Failed self-test`,
+or `PMW3610 initialization failed`. Report the PCB revision and whether keys
+continue working during the failure. These observations determine whether to
+investigate sensor initialization, supply/wiring, or motion-event delivery.
+
+If the trackball works over USB but fails specifically when **Bluetooth is
+selected as the output**, refresh the host's cached HID descriptor by removing
+the keyboard, clearing that Bluetooth profile on the keyboard, and pairing
+again. That is a separate test from turning the physical switch on.
+
+References: [ZMK releases](https://github.com/zmkfirmware/zmk/releases),
+[USB logging](https://zmk.dev/docs/development/usb-logging),
+[Bluetooth HID descriptor refresh](https://zmk.dev/docs/features/bluetooth#refreshing-the-hid-descriptor),
+and [Lemon v0.3 schematic](https://github.com/rianadon/Cosmos-Keyboard-PCBs/blob/main/lemon-wireless-uc/lemon-wireless-schematic-v03.pdf).

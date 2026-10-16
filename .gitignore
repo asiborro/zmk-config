@@ -1,0 +1,9 @@
+/.west/
+/build/
+/zmk/
+/zephyr/
+/modules/
+/tools/
+/bootloader/
+/zmk-pmw3610-driver/
+/artifacts/
