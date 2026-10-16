@@ -21,6 +21,8 @@ TELEMETRY_LOCAL = "50ea0001-2f54-4e31-a2b7-6cb20f70a901"
 TELEMETRY_PEER = "50ea0002-2f54-4e31-a2b7-6cb20f70a901"
 MAX_SOURCE_AGE = 180
 VOLTAGE_SETTLE_SECONDS = 120
+BATTERY_MAX_MV = 4250
+USB_MIN_MV = 4400
 CURVE_PATH = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "peamk-battery/curve.json"
 
 
@@ -51,17 +53,23 @@ def decode_telemetry(value, points=None):
         raise ValueError("Telemetry packet must be 16 bytes")
     version, flags, brightness, relay_age, mv, age, sequence, power_age, raw_mv = struct.unpack(
         "<BBBBHHIHH", bytes(value))
-    if version != 1 or flags & ~0x3F or (brightness != 255 and brightness > 100):
+    if version not in (1, 2) or flags & ~0x3F or (brightness != 255 and brightness > 100):
         raise ValueError("Unsupported or malformed telemetry packet")
     connected = bool(flags & 32)
     fresh = connected and relay_age <= MAX_SOURCE_AGE
     valid = fresh and bool(flags & 1) and sequence != 0 and age <= MAX_SOURCE_AGE
     if flags & 1 and not (1500 <= mv <= 6000 and 1500 <= raw_mv <= 6000):
         raise ValueError("Invalid supply voltage")
-    usb = bool(flags & 2) if fresh and flags & 4 else None
+    # Lemon v2's MS88SF21 module ties VBUS to VDDH. Protocol v1's VBUS
+    # detector therefore also asserted on battery, and its transition age
+    # is unusable. Infer power from fresh supply voltage on both versions;
+    # v2 measures transitions using these same conservative thresholds.
+    usb = (True if mv >= USB_MIN_MV else False if mv <= BATTERY_MAX_MV else None) if valid else None
+    power_age = power_age if version == 2 and usb is not None else None
     leds = bool(flags & 8) if fresh and flags & 16 else None
-    result = dict(connected=connected, source_age=age, relay_age=relay_age,
+    result = dict(version=version, connected=connected, source_age=age, relay_age=relay_age,
                   sequence=sequence, power_age=power_age, usb=usb, leds=leds,
+                  power_source="voltage-inference", reported_usb=bool(flags & 2) if flags & 4 else None,
                   brightness=brightness if fresh and brightness != 255 else None,
                   voltage_mv=mv if valid else None, raw_voltage_mv=raw_mv if valid else None,
                   estimate=None, method=("custom-" + hashlib.sha256(json.dumps(points).encode()).hexdigest()[:12])
@@ -72,11 +80,11 @@ def decode_telemetry(value, points=None):
         state = "stale"
     elif usb is True:
         state = "usb"
-    elif not valid or usb is None:
+    elif not valid:
         state = "unavailable"
-    elif mv > 4250:
-        state = "invalid"
-    elif power_age < VOLTAGE_SETTLE_SECONDS:
+    elif usb is None:
+        state = "uncertain"
+    elif power_age is not None and power_age < VOLTAGE_SETTLE_SECONDS:
         state = "settling"
     else:
         state = "battery"
@@ -112,7 +120,7 @@ class ReadError(Exception):
     """A Bluetooth value is temporarily unavailable."""
 
 
-def battery_levels(objects, read_value, device_name="PeaMK", curves=None):
+def battery_levels(objects, read_value, device_name="PeaMK", curves=None, include_legacy=True):
     """Identify sides by ZMK's descriptor, never by GATT handle order."""
     levels = {"connected": False, "left": None, "right": None, "proxy": False}
     device_path = next(
@@ -127,6 +135,9 @@ def battery_levels(objects, read_value, device_name="PeaMK", curves=None):
     if device_path is None:
         return levels
     levels["connected"] = True
+    add_telemetry(levels, objects, read_value, device_path, curves)
+    if not include_legacy and "telemetry" in levels:
+        return levels
     for path, interfaces in objects.items():
         char = interfaces.get(CHARACTERISTIC, {})
         if not path.startswith(device_path + "/") or char.get("UUID") != BATTERY_LEVEL:
@@ -157,7 +168,7 @@ def battery_levels(objects, read_value, device_name="PeaMK", curves=None):
             continue
         if len(value) == 1 and 0 <= value[0] <= 100:
             levels[side] = value[0]
-    return add_telemetry(levels, objects, read_value, device_path, curves)
+    return levels
 
 
 def waybar_output(levels, device_name="PeaMK"):
@@ -165,7 +176,7 @@ def waybar_output(levels, device_name="PeaMK"):
         return "--" if value is None else f"{value}%"
 
     if not levels["connected"]:
-        return {"text": "", "tooltip": f"{device_name} is disconnected", "class": "disconnected"}
+        return {"text": f"{device_name} L -- R --", "tooltip": f"{device_name} is disconnected", "class": "disconnected"}
     if "telemetry" in levels:
         labels, detail, estimates = {}, [device_name], []
         for half in ("left", "right"):
@@ -179,7 +190,7 @@ def waybar_output(levels, device_name="PeaMK"):
             if data.get("voltage_mv") is not None:
                 line += f" · supply {data['voltage_mv'] / 1000:.3f} V"
             if state == "usb":
-                line += " · charge level/completion unknown"
+                line += " · USB inferred · charge level/completion unknown"
             elif state != "battery":
                 line += f" · {state}"
             if data.get("source_age") is not None:
@@ -187,7 +198,9 @@ def waybar_output(levels, device_name="PeaMK"):
             detail.append(line)
             if estimate is not None:
                 estimates.append(estimate)
-        detail.append("Voltage-based estimate; USB supply voltage does not measure the cell.")
+        detail.append("Power and charge are voltage-based estimates; USB supply voltage does not measure the cell.")
+        if any(data.get("version") == 1 for data in levels["telemetry"].values()):
+            detail.append("Older telemetry: readings can lag by two minutes; unplug settling time is unknown.")
         return {"text": f"{device_name} L {labels['left']} R {labels['right']}",
                 "tooltip": "\n".join(detail),
                 "class": "warning" if estimates and min(estimates) <= 20 else "connected"}
@@ -208,7 +221,7 @@ def waybar_output(levels, device_name="PeaMK"):
     }
 
 
-def read_bluez(device_name):
+def read_bluez(device_name, include_legacy=True):
     import gi
 
     gi.require_version("Gio", "2.0")
@@ -233,7 +246,7 @@ def read_bluez(device_name):
     curves = None
     if CURVE_PATH.exists():
         curves = json.loads(CURVE_PATH.read_text())
-    return battery_levels(objects, read_value, device_name, curves)
+    return battery_levels(objects, read_value, device_name, curves, include_legacy)
 
 
 def main():
@@ -241,7 +254,7 @@ def main():
     parser.add_argument("--device", default="PeaMK", help="Bluetooth device alias")
     args = parser.parse_args()
     try:
-        output = waybar_output(read_bluez(args.device), args.device)
+        output = waybar_output(read_bluez(args.device, include_legacy=False), args.device)
     except Exception as error:
         # Keep Waybar alive if BlueZ is restarting or the system bus is unavailable.
         print(f"Battery reader: {error}", file=sys.stderr)

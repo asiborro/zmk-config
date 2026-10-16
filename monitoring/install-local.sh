@@ -10,6 +10,17 @@ install -d "$HOME/.local/lib/peamk-battery" "$HOME/.local/bin" "$HOME/.config/sy
 install -m 644 "$repo_dir/scripts/battery-monitor.py" "$repo_dir/scripts/waybar-battery.py" "$HOME/.local/lib/peamk-battery/"
 if [[ -d "$HOME/.config/waybar/scripts" ]]; then
     install -m 755 "$repo_dir/scripts/waybar-battery.py" "$HOME/.config/waybar/scripts/waybar-battery.py"
+    install -m 644 "$kit_dir/waybar-battery.css" "$HOME/.config/waybar/peamk-battery.css"
+    /usr/bin/python3 - <<'PY'
+from datetime import datetime
+from pathlib import Path
+import shutil
+style = Path.home() / ".config/waybar/style.css"
+if style.exists() and '"peamk-battery.css"' not in style.read_text():
+    backup = style.with_name("style.css.before-peamk-" + datetime.now().strftime("%Y%m%d-%H%M%S%f"))
+    shutil.copy2(style, backup)
+    style.write_text('@import "peamk-battery.css";\n' + style.read_text())
+PY
 fi
 cat > "$HOME/.local/bin/peamk-battery" <<'EOF'
 #!/usr/bin/env sh

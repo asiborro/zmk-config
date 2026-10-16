@@ -18,9 +18,9 @@ monitor = module("telemetry_monitor", "battery-monitor.py")
 
 
 def packet(usb=False, mv=3900, age=10, relay_age=0, sequence=1, power_age=2000,
-           connected=True, valid=True, leds=True):
+           connected=True, valid=True, leds=True, version=2):
     flags = (int(valid) | int(usb) << 1 | 4 | int(leds) << 3 | 16 | int(connected) << 5)
-    return struct.pack("<BBBBHHIHH", 1, flags, 15, relay_age, mv, age, sequence, power_age, mv + 5)
+    return struct.pack("<BBBBHHIHH", version, flags, 15, relay_age, mv, age, sequence, power_age, mv + 5)
 
 
 class TelemetryTest(unittest.TestCase):
@@ -41,10 +41,31 @@ class TelemetryTest(unittest.TestCase):
             self.assertIsNone(data["usb"])
             self.assertIsNone(data["voltage_mv"])
 
-    def test_fresh_usb_metadata_survives_an_adc_failure(self):
-        data = reader.decode_telemetry(packet(usb=True, valid=False, age=65535))
-        self.assertEqual(data["state"], "usb")
+    def test_no_power_claim_without_a_fresh_valid_voltage(self):
+        data = reader.decode_telemetry(packet(usb=True, mv=4950, valid=False, age=65535))
+        self.assertEqual(data["state"], "unavailable")
+        self.assertIsNone(data["usb"])
         self.assertIsNone(data["voltage_mv"])
+
+    def test_lemon_v2_vbus_flag_on_battery_is_not_usb(self):
+        data = reader.decode_telemetry(packet(version=1, usb=True, mv=3760, power_age=0))
+        self.assertEqual(data["state"], "battery")
+        self.assertFalse(data["usb"])
+        self.assertTrue(data["reported_usb"])
+        self.assertAlmostEqual(data["estimate"], 41.33)
+        self.assertIsNone(data["power_age"])
+
+    def test_power_inference_requires_voltage_outside_the_ambiguous_band(self):
+        for version in (1, 2):
+            with self.subTest(version=version):
+                self.assertEqual(reader.decode_telemetry(packet(version=version, mv=4950))["state"], "usb")
+                self.assertEqual(reader.decode_telemetry(packet(version=version, mv=4400))["state"], "usb")
+                self.assertEqual(reader.decode_telemetry(packet(version=version, mv=4250))["state"], "battery")
+                for mv in (4251, 4300, 4399):
+                    data = reader.decode_telemetry(packet(version=version, mv=mv))
+                    self.assertEqual(data["state"], "uncertain")
+                    self.assertIsNone(data["usb"])
+                    self.assertIsNone(data["estimate"])
 
     def test_unplugging_waits_for_settling_and_fresh_voltage(self):
         self.assertIsNone(reader.decode_telemetry(packet(power_age=20))["estimate"])
@@ -53,7 +74,7 @@ class TelemetryTest(unittest.TestCase):
         self.assertEqual(reader.decode_telemetry(packet())["estimate"], 60)
 
     def test_malformed_or_unknown_packets_are_rejected(self):
-        for value in (b"", packet()[:-1], bytes([2]) + packet()[1:], packet(mv=0)):
+        for value in (b"", packet()[:-1], bytes([3]) + packet()[1:], packet(mv=0)):
             with self.assertRaises(ValueError):
                 reader.decode_telemetry(value)
 
@@ -105,6 +126,8 @@ class TelemetryStorageTest(unittest.TestCase):
         monitor.mark(self.db, monitor.HALVES, {"power": "battery", "leds": "off"}, now=0)
         rows = self.collect(1000, usb=True, mv=4950)
         self.assertEqual(rows[1]["power"], "usb")
+        self.assertEqual(rows[1]["power_source"], "voltage-inference")
+        self.assertEqual(rows[1]["leds_source"], "firmware")
         self.assertEqual(rows[1]["leds"], "on")
         self.assertEqual(rows[1]["eligible"], 0)
         metrics = monitor.exposition(rows, 1000)
@@ -130,6 +153,35 @@ class TelemetryStorageTest(unittest.TestCase):
         rows = self.collect(1900, power_age=200)
         self.assertEqual(rows[0]["condition_since"], 1700)
         self.assertFalse(rows[0]["eligible"])
+
+    def test_old_vbus_chatter_does_not_restart_battery_analysis(self):
+        self.collect(1000, version=1, usb=True, mv=3760, power_age=5)
+        self.collect(1300, version=1, usb=False, mv=3755, power_age=10)
+        rows = self.collect(1600, version=1, usb=True, mv=3750, power_age=0)
+        self.assertTrue(rows[0]["eligible"])
+        self.assertEqual(rows[0]["condition_since"], 1000)
+        self.assertEqual(rows[0]["power"], "battery")
+        self.assertEqual(rows[0]["reported_usb"], 1)
+        self.assertIsNone(rows[0]["power_age_seconds"])
+
+    def test_firmware_upgrade_starts_a_new_comparison_segment(self):
+        self.collect(1000, version=1)
+        self.collect(1300, version=1)
+        self.assertTrue(self.collect(1600, version=1)[0]["eligible"])
+        rows = self.collect(1900, version=2)
+        self.assertFalse(rows[0]["eligible"])
+        self.assertEqual(rows[0]["condition_since"], 1900)
+
+    def test_disconnect_does_not_restore_old_manual_usb_labels(self):
+        monitor.mark(self.db, monitor.HALVES, {"power": "usb", "leds": "on"}, now=0)
+        self.collect(1000)
+        for now in (1300, 1600):
+            rows = monitor.collect(self.db, lambda: dict(connected=False, left=None, right=None), now=now)
+            self.assertEqual(rows[0]["reporting_state"], "disconnected")
+            self.assertEqual(rows[0]["power"], "unknown")
+            self.assertEqual(rows[0]["leds"], "unknown")
+            self.assertIn('peamk_usb_power{half="left"} NaN', monitor.exposition(rows, now))
+        self.assertFalse(self.collect(1900)[0]["eligible"])
 
     def test_migration_keeps_existing_rows_and_annotations(self):
         old_path = Path(self.tmp.name) / "old.sqlite3"

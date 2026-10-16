@@ -23,26 +23,47 @@ a direct connection to the computer. Pairings and keyboard/mouse descriptors
 are preserved; the additional GATT service is appended after existing services.
 The host may need one ordinary Bluetooth reconnect to discover it.
 
-Every 60 seconds while powered and awake (including idle), each half takes five
+Every five seconds while powered and awake (including idle), each half takes five
 ADC samples on ZMK's low-priority battery queue and reports their median plus
 the last raw value. Sampling does not reset the inactivity timer; deep sleep
-still occurs after 15 minutes. The right polls left telemetry once per minute.
+still occurs after 15 minutes. The right polls left telemetry every five seconds.
 The host still collects every five minutes, including during USB power.
 
-USB presence is read directly from nRF52840 VBUS detection, including on the left
-and with a charger that does not enumerate USB. **USB power does not prove the
-battery is charging or full**: neither the battery switch nor the charger CHG
-pin is exposed to this firmware. On Lemon v2, VDDH is the charger's system output,
-not a separate battery terminal measurement. The supply-voltage graph therefore
-rises on USB, while the charge-estimate graph has a gap. Waybar shows `USB`.
+**Power is inferred from supply voltage, not detected from a separate USB pin.**
+The [Lemon v2 schematic](https://github.com/rianadon/Cosmos-Keyboard-PCBs/blob/main/lemon-wireless-uc/lemon-wireless-schematic-v02.pdf)
+uses an MS88SF21 module whose [internal USB configuration](https://store.minewsemi.com/wp-content/uploads/2024/03/MS88SF2-nRF52840_Datasheet_K_EN-1.pdf)
+connects VBUS to VDDH (page 7, R2). The original telemetry firmware read
+VBUSDETECT and incorrectly identified a charged battery as USB power.
+The reader now ignores that flag in old packets and uses fresh supply voltage:
+at most 4250 mV suggests battery, at least 4400 mV suggests USB, and the interval
+between them is uncertain. A weak or current-limited USB supply can overlap the
+battery range, so this remains an inference.
+
+**USB power does not prove the battery is charging or full**: neither the
+battery switch nor the charger CHG pin is exposed to this firmware. On Lemon
+v2, VDDH is the charger's system output, not a separate battery terminal
+measurement. The supply-voltage graph therefore rises on USB, while the
+charge-estimate graph has a gap. Waybar shows `USB` with an explanation in its
+tooltip. Power annotations recorded using the old VBUS detector are retained
+in history, but excluded from the dashboard's power timeline.
 The normal OS Bluetooth battery widget still reads ZMK's original percentage.
 
 Readings older than 180 seconds or from a disconnected left half cannot produce
-a charge estimate. After a power transition, estimates wait two minutes;
+a charge estimate. With protocol v2, after a power transition estimates wait two minutes;
 discharge comparisons wait ten minutes. Detected power and RGB/brightness take
 priority over manual annotations. A change in power, LEDs, brightness, firmware
 boot, curve, or collection continuity starts a new comparison segment. Capacity
 remains a manual label. All raw history is retained, including zeros and USB.
+
+Protocol v1 remains readable without reflashing: its incorrect VBUS flag and
+transition age are ignored, and the flag is stored separately for diagnosis.
+Its unplug settling time is unknown, so its immediate voltage estimate is
+provisional. Comparisons still wait ten minutes of observed stable conditions.
+Flashing both halves upgrades to v2 and speeds sampling/relay from 60 to five
+seconds. With Waybar's five-second refresh, a normal update takes up to roughly
+ten seconds on the right and fifteen on the left, plus Bluetooth delays. The
+old firmware can take about two minutes on the left even with faster Waybar
+refresh. The two-minute estimate settling window is separate from USB display.
 
 ### Calculation and calibration
 
@@ -69,7 +90,7 @@ calculation. A curve change gets a distinct method label to avoid joining
 incompatible estimates into a drain-rate comparison. Full-charge-to-recharge
 runtime with consistent usage and LEDs remains the practical sizing test.
 
-### Read-only Bluetooth protocol v1
+### Read-only Bluetooth protocol v2 (v1 compatible)
 
 Service UUID: `50ea0000-2f54-4e31-a2b7-6cb20f70a901`. Characteristic `50ea0001`
 (same UUID suffix) reports the local half; on the central, `50ea0002` reports
@@ -78,14 +99,14 @@ with little-endian integers and a default-MTU-compatible payload:
 
 | Offset | Type | Meaning |
 | --- | --- | --- |
-| 0 | u8 | Version, 1 |
-| 1 | u8 | Flags: bit 0 ADC valid, 1 USB present, 2 USB known, 3 RGB on, 4 RGB known, 5 connected |
+| 0 | u8 | Version, 2; relayed v1 packets retain their original version |
+| 1 | u8 | Flags: bit 0 ADC valid, 1 USB inferred, 2 power inference available, 3 RGB on, 4 RGB known, 5 connected |
 | 2 | u8 | Configured brightness 0–100, or 255 unknown |
 | 3 | u8 | Metadata relay age in seconds, saturating at 255 |
 | 4 | u16 | Median supply millivolts |
 | 6 | u16 | ADC sample age, including relay time; 65535 unknown/saturated |
 | 8 | u32 | Successful sample counter, resets at boot |
-| 12 | u16 | Seconds since observed power-source change, saturating at 65535 |
+| 12 | u16 | Seconds since voltage-inferred power-source change, saturating at 65535; ignored for v1 |
 | 14 | u16 | Last unfiltered supply millivolts |
 
 The central clears cached peer telemetry on disconnection/reconnection and
@@ -156,7 +177,8 @@ After deployment, the dashboard is at
 - `peamk_supply_raw_voltage_volts{half}`: last unfiltered ADC sample.
 - `peamk_voltage_sample_age_seconds{half}`: actual ADC sample age including relay.
 - `peamk_reporting_state_info{half,state}`: USB/battery/settling/stale/unavailable.
-- `peamk_condition_source_info{half,source}`: firmware or manual annotation.
+- `peamk_condition_source_info{half,source}`: voltage inference or manual power annotation.
+- `peamk_leds_source_info{half,source}`: firmware or manual RGB annotation.
 - `peamk_battery_discharge_ratio{half,leds}`: usable battery-only subset.
 - `peamk_battery_read_success{half}` and `peamk_bluetooth_connected`: visibility.
 - `peamk_sample_age_seconds`: collection age, **not** the left firmware's age.
@@ -175,12 +197,22 @@ measurement or a validated prediction of remaining runtime.
 
 ## Installation and operations
 
-Requires Python 3, PyGObject/Gio, BlueZ and systemd user services. No firmware
-change or reflash is involved. `install-local.sh` installs the collector, CLI,
+Requires Python 3, PyGObject/Gio, BlueZ and systemd user services. Installation
+does not flash firmware. `install-local.sh` installs the collector, CLI,
 and both user service files, and starts only the local collector by default.
 Pass `--with-tunnel` to also start sending data to the configured server.
 The tunnel uses existing SSH access to `ci4.test` and
 binds only to loopback at both ends; no new LAN-facing port is opened.
+
+When `~/.config/waybar/scripts` exists, the installer also updates the Waybar
+reader and installs the matching dark background, 10 px corners and 210 px
+minimum width. It imports only the battery stylesheet, backing up the main
+stylesheet first. Merge [waybar-battery.jsonc](waybar-battery.jsonc) into the
+existing config for a five-second refresh and add `custom/peamk-battery` to
+`modules-right`. Reload Waybar with `pkill -USR2 -x waybar`. Disconnected and
+missing readings retain `L -- R --`, so the widget does not disappear or shrink.
+Waybar reads only the two telemetry characteristics when available; the
+five-minute collector also saves the original battery-service percentages.
 
 ```sh
 monitoring/install-local.sh
