@@ -1,0 +1,49 @@
+diff --git i/src/pixart.h w/src/pixart.h
+index 3ce495fb8d5..33bdadee837 100644
+--- i/src/pixart.h
++++ w/src/pixart.h
+@@ -40,6 +40,7 @@ struct pixart_data {
+     // the work structure for delayable init steps
+     struct k_work_delayable init_work;
+     int async_init_step;
++    uint8_t init_retries;
+ 
+     //
+     bool ready;           // whether init is finished successfully
+diff --git i/src/pmw3610.c w/src/pmw3610.c
+index a4552930e61..3bd0018c64c 100644
+--- i/src/pmw3610.c
++++ w/src/pmw3610.c
+@@ -47,6 +47,10 @@ static const int32_t async_init_delay[ASYNC_INIT_STEP_COUNT] = {
+     [ASYNC_INIT_STEP_CONFIGURE] = 0,
+ };
+ 
++/* Two additional full startup attempts, without blocking the work queue. */
++#define PMW3610_INIT_RETRIES 2
++#define PMW3610_INIT_RETRY_DELAY_MS 500
++
+ static int pmw3610_async_init_power_up(const struct device *dev);
+ static int pmw3610_async_init_clear_ob1(const struct device *dev);
+ static int pmw3610_async_init_check_ob1(const struct device *dev);
+@@ -528,7 +532,20 @@ static void pmw3610_async_init(struct k_work *work) {
+ 
+     data->err = async_init_fn[data->async_init_step](dev);
+     if (data->err) {
+-        LOG_ERR("PMW3610 initialization failed");
++        LOG_ERR("PMW3610 initialization failed at step %d (%d)",
++                data->async_init_step, data->err);
++        /* SPI helpers can return on error while chip select is still active. */
++        spi_cs_ctrl(dev, false);
++        if (data->init_retries < PMW3610_INIT_RETRIES) {
++            data->init_retries++;
++            data->async_init_step = ASYNC_INIT_STEP_POWER_UP;
++            LOG_WRN("PMW3610 retry %u/%u in %d ms", data->init_retries,
++                    PMW3610_INIT_RETRIES, PMW3610_INIT_RETRY_DELAY_MS);
++            k_work_schedule(&data->init_work, K_MSEC(PMW3610_INIT_RETRY_DELAY_MS));
++        } else {
++            LOG_ERR("PMW3610 giving up after %u startup attempts",
++                    data->init_retries + 1);
++        }
+     } else {
+         data->async_init_step++;
+ 
