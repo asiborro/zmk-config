@@ -58,13 +58,17 @@ jobs:
             bootloader/
             zmk/
             zmk-pmw3610-driver/
-          key: west-zephyr-3.5-${{ hashFiles('config/west.yml', 'config/deps.yml') }}
+          key: west-zephyr-3.5-${{ hashFiles('config/west.yml', 'config/deps.yml', 'patches/*.patch') }}
 
       - name: West init
         run: west init -l config
 
       - name: West update
         run: west update --fetch-opt=--filter=tree:0
+
+      - name: Test PMW3610 startup failure recovery
+        if: matrix.artifact == 'right'
+        run: python3 scripts/check-pmw3610-startup.py zmk-pmw3610-driver
 
       - name: West zephyr-export
         run: west zephyr-export

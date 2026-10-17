@@ -8,7 +8,8 @@ scroll layer, and boot keys are retained.
 
 - ZMK **v0.3.0**, the latest published stable release checked on 2026-10-16.
 - Cosmos-recommended [Inorichi PMW3610 driver](https://github.com/inorichi/zmk-pmw3610-driver)
-  pinned to `1d9c2c68ca76012e1b1e5f6ef02fa5eadc4ca399`.
+  pinned to `1d9c2c68ca76012e1b1e5f6ef02fa5eadc4ca399`, with a local
+  [startup retry patch](patches/pmw3610-startup-retries.patch).
 - Zephyr 3.5 build image pinned by digest to match this ZMK release.
 - Local Lemon board and boot-key module; provenance and license are in
   [`config/UPSTREAM`](config/UPSTREAM) and [`config/LICENSE-ZMK`](config/LICENSE-ZMK).
@@ -55,6 +56,25 @@ west build -s zmk/app -d build/right -b cosmos_lemon_wireless -- \
 
 Use `peamk_r2c_left` and a separate build directory for the left side. The
 `ZMK_EXTRA_MODULES` argument loads the local Lemon board/boot-key module.
+For right-half builds, this module also applies the startup retry patch at
+configure time. The patch helper accepts only the pinned driver revision and
+is safe to run repeatedly. The frozen manifest records the applied patch hash.
+
+The driver makes one normal initialization attempt. If a sensor startup step
+fails, it releases chip select and retries the complete reset/self-test/configure
+sequence up to **two more times**, waiting **500 ms** before each retry. Successful
+startup keeps its existing timing. After three failed attempts it stops; debug
+firmware logs the failed step, error code, retries, and final failure. The retries
+address transient initialization failures; they do not establish the cause of
+the intermittent trackball failure or recover failures after initialization.
+
+CI injects failures at every initialization stage to check recovery, the retry
+limit, and that motion interrupts remain disabled until startup succeeds. To run
+the same checks locally after `west update`:
+
+```sh
+python3 scripts/check-pmw3610-startup.py zmk-pmw3610-driver
+```
 
 ## Left and right battery levels
 
