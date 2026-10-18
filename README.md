@@ -78,6 +78,28 @@ python3 scripts/check-pmw3610-startup.py zmk-pmw3610-driver
 
 ## Left and right battery levels
 
+### LED brightness and battery testing
+
+Both halves default to **10% RGB brightness**. LEDs turn off after **60 seconds
+of inactivity** and return to their previous on/off state on activity. The
+existing 15-minute deep-sleep timeout is separate from this LED idle timer.
+
+RGB settings survive firmware updates, so flashing alone will not replace a
+previously saved brightness. After flashing both halves, hold **Esc/Media** and
+tap **G** to apply exactly **10% to both halves**. This preset uses the default
+cyan hue and full saturation while keeping the selected animation. Keep both
+halves connected and powered for at least a minute so the setting can be saved.
+Esc/Media + **B** increases brightness, **J** decreases it, and **Q** toggles LEDs.
+
+Use the normal left/right images for battery comparisons; USB debug logging
+changes power consumption. Verify 10% for both halves in telemetry, then measure
+each half from a full charge to needing a recharge under normal use. Existing
+voltage percentages and short discharge segments cannot establish week-long
+runtime. A 3000 mAh battery offers roughly four times the runtime of a 750 mAh
+battery at the same load; it is a candidate, not a verified one-week size.
+
+### Monitoring
+
 For five-minute history, Prometheus/Grafana tracking, and LED-on/off comparisons,
 see [battery monitoring](monitoring/README.md). The logger runs on Linux;
 the detailed voltage, RGB and sample-age readings require telemetry firmware.
