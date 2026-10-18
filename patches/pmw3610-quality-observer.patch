@@ -1,0 +1,65 @@
+--- a/src/pmw3610.c
++++ b/src/pmw3610.c
+@@ -15,6 +15,22 @@
+ #include <zephyr/input/input.h>
+ #include <zmk/keymap.h>
+ #include "pmw3610.h"
++#include "pmw3610_diagnostics.h"
++
++__weak void pmw3610_diagnostics_init(const struct device *dev, uint8_t stage,
++                                   uint8_t retries, int error, bool ready) {
++    ARG_UNUSED(dev);
++    ARG_UNUSED(stage);
++    ARG_UNUSED(retries);
++    ARG_UNUSED(error);
++    ARG_UNUSED(ready);
++}
++
++__weak void pmw3610_diagnostics_burst(const struct device *dev, const uint8_t *burst, int error) {
++    ARG_UNUSED(dev);
++    ARG_UNUSED(burst);
++    ARG_UNUSED(error);
++}
+ 
+ #include <zephyr/logging/log.h>
+ LOG_MODULE_REGISTER(pmw3610, CONFIG_INPUT_LOG_LEVEL);
+@@ -532,6 +548,8 @@
+ 
+     data->err = async_init_fn[data->async_init_step](dev);
+     if (data->err) {
++        pmw3610_diagnostics_init(dev, data->async_init_step, data->init_retries,
++                                data->err, false);
+         LOG_ERR("PMW3610 initialization failed at step %d (%d)",
+                 data->async_init_step, data->err);
+         /* SPI helpers can return on error while chip select is still active. */
+@@ -551,6 +569,7 @@
+ 
+         if (data->async_init_step == ASYNC_INIT_STEP_COUNT) {
+             data->ready = true; // sensor is ready to work
++            pmw3610_diagnostics_init(dev, data->async_init_step, data->init_retries, 0, true);
+             LOG_INF("PMW3610 initialized");
+             set_interrupt(dev, true);
+         } else {
+@@ -638,6 +657,7 @@
+ #endif
+ 
+     int err = motion_burst_read(dev, buf, sizeof(buf));
++    pmw3610_diagnostics_burst(dev, buf, err);
+     if (err) {
+         return err;
+     }
+--- /dev/null
++++ b/src/pmw3610_diagnostics.h
+@@ -0,0 +1,12 @@
++/* SPDX-License-Identifier: MIT */
++#pragma once
++#include <stdbool.h>
++#include <stdint.h>
++#include <zephyr/device.h>
++
++/* Optional observers. Called from driver work, never from the GPIO ISR.
++ * Observers must not block or perform sensor I/O. Burst is valid only on success.
++ */
++void pmw3610_diagnostics_init(const struct device *dev, uint8_t stage,
++                            uint8_t retries, int error, bool ready);
++void pmw3610_diagnostics_burst(const struct device *dev, const uint8_t *burst, int error);

@@ -19,6 +19,7 @@ import sys
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import trackball_telemetry
 
 HALVES = ("left", "right")
 INTERVAL = 300
@@ -68,6 +69,7 @@ def database(path):
         for name, definition in additions.items():
             if name not in columns:
                 connection.execute(f"ALTER TABLE samples ADD COLUMN {name} {definition}")
+    trackball_telemetry.initialize(connection)
     return connection
 
 
@@ -312,7 +314,10 @@ def serve(args):
                 return
             connection = database(args.database)
             try:
-                body = exposition(latest(connection), time.time(), args.interval * 2).encode()
+                now = time.time()
+                body = (exposition(latest(connection), now, args.interval * 2) +
+                        trackball_telemetry.exposition(trackball_telemetry.latest(connection),
+                                                      now, args.trackball_interval * 2)).encode()
             finally:
                 connection.close()
             self.send_response(200)
@@ -329,14 +334,19 @@ def serve(args):
     for signum in (signal.SIGINT, signal.SIGTERM):
         signal.signal(signum, lambda *_: stop.set())
     connection = database(args.database)
+    next_battery = next_trackball = 0
     try:
         while not stop.is_set():
-            started = time.monotonic()
-            rows = collect(connection, lambda: read_keyboard(args.device))
-            print(json.dumps({"timestamp": rows[0]["timestamp"], "connected": rows[0]["connected"],
-                              **{row["half"]: row["level"] for row in rows}, "error": rows[0]["error"]}), flush=True)
+            if time.monotonic() >= next_battery:
+                rows = collect(connection, lambda: read_keyboard(args.device))
+                print(json.dumps({"timestamp": rows[0]["timestamp"], "connected": rows[0]["connected"],
+                                  **{row["half"]: row["level"] for row in rows}, "error": rows[0]["error"]}), flush=True)
+                next_battery = time.monotonic() + args.interval
+            if time.monotonic() >= next_trackball:
+                trackball_telemetry.collect(connection, lambda: trackball_telemetry.read_bluez(args.device))
+                next_trackball = time.monotonic() + args.trackball_interval
             # Do not backfill invented samples after suspend or a slow collection.
-            stop.wait(max(0, args.interval - (time.monotonic() - started)))
+            stop.wait(max(0, min(next_battery, next_trackball) - time.monotonic()))
     finally:
         connection.close()
         server.shutdown()
@@ -350,6 +360,7 @@ def main():
     daemon = commands.add_parser("serve", help="Collect every five minutes and serve cached metrics")
     daemon.add_argument("--device", default="PeaMK")
     daemon.add_argument("--interval", type=int, default=INTERVAL)
+    daemon.add_argument("--trackball-interval", type=int, default=trackball_telemetry.INTERVAL)
     daemon.add_argument("--bind", default="127.0.0.1")
     daemon.add_argument("--port", type=int, default=19108)
     annotation = commands.add_parser("mark", help="Annotate a physical change; does not control the keyboard")
@@ -367,6 +378,8 @@ def main():
     if args.command == "serve":
         if args.interval < 30:
             parser.error("interval must be at least 30 seconds")
+        if args.trackball_interval < 5:
+            parser.error("trackball interval must be at least 5 seconds")
         serve(args)
         return
     connection = database(args.database)

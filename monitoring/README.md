@@ -4,7 +4,7 @@ The Linux host samples both Bluetooth battery services every **five minutes**.
 It keeps every attempt, including missing readings, in
 `~/.local/share/peamk-battery/history.sqlite3`. A local HTTP exporter serves the
 latest sample without extra Bluetooth polling. Prometheus on `ci4.test` scrapes
-it every minute through an SSH tunnel and retains 30 days. The local database
+it every 15 seconds through an SSH tunnel and retains 30 days. The local database
 has no automatic expiry and can be exported to CSV.
 
 The collector runs while this Linux user's services run. It starts again at
@@ -191,7 +191,7 @@ Multiply ratio metrics by 100 to display percentages. Avoid `rate()` on the
 battery gauge and avoid fitting discharge slopes across USB or missing data.
 The local report fits a linear regression through all original five-minute
 samples within each uninterrupted comparison segment, rather than using just
-two endpoints or counting repeated one-minute Prometheus scrapes as new data.
+two endpoints or counting repeated Prometheus scrapes as new battery data.
 With telemetry it also reports the voltage slope. Neither slope is a current
 measurement or a validated prediction of remaining runtime.
 
@@ -236,3 +236,60 @@ Prometheus.
 
 Stop with `systemctl --user disable --now peamk-battery-tunnel peamk-battery`.
 This preserves the history for later analysis.
+
+## Trackball quality over Bluetooth
+
+The right half appends a read-only, encrypted characteristic
+`50ea0003-2f54-4e31-a2b7-6cb20f70a901` to the existing telemetry service. Existing
+HID, BAS and battery telemetry handles and the v2 battery packets remain unchanged.
+The left firmware does not need this addition. Both normal and debug right
+images include quality telemetry.
+
+The Inorichi motion burst already contains SQUAL and shutter. Passive observers
+cache those bytes plus startup status and read errors under a short spin lock.
+There is no extra SPI read, sensor wake-up, force-awake setting or activity event.
+A Bluetooth read copies a 20-byte snapshot, which fits a default ATT read response.
+
+Protocol v1 (all multibyte values little-endian):
+
+| Offset | Type | Meaning |
+| --- | --- | --- |
+| 0 | u8 | Version: 1 |
+| 1 | u8 | Flags: bit 0 sample exists, bit 1 initialized, bit 2 last burst motion bit |
+| 2 | u8 | Raw SQUAL register, 0–255 |
+| 3 | u8 | Startup retries used, 0–2 |
+| 4 | u16 | Nine-bit shutter value, 0–511 clock cycles |
+| 6 | i16 | Last init/read errno; zero after success |
+| 8 | u16 | Last successful burst age in seconds, saturates at 65535 |
+| 10 | u32 | Successful bursts since boot |
+| 14 | u32 | Failed motion-burst reads since boot |
+| 18 | u8 | Initialization stage: 0–3; 4 means ready |
+| 19 | u8 | Reserved, zero |
+
+The collector polls only this cached characteristic every **10 seconds** and
+saves every attempt in SQLite `trackball_samples`. Battery sampling stays at
+five minutes. Neither idle nor charging stops collection. Deep sleep, another
+host profile and link loss appear disconnected; old firmware appears unsupported.
+The ordinary Waybar path does not add trackball Bluetooth reads.
+
+`peamk_trackball_squal` and `peamk_trackball_shutter_cycles` are available only
+when the sensor is ready, the last operation succeeded, and the sample is no
+more than **30 seconds** old. Missing data is NaN, never an invented zero.
+`peamk_trackball_sample_age_seconds` includes time elapsed in the collector cache.
+Stale means there has been no recent sensor burst: this is expected while idle
+but can also indicate stalled acquisition. It is not itself evidence of bad optics.
+
+Other metrics include `peamk_trackball_ready`, `peamk_trackball_last_error`,
+`peamk_trackball_init_retries`, `peamk_trackball_init_stage`,
+`peamk_trackball_quality_available`, `peamk_trackball_collection_success`,
+`peamk_trackball_state_info`, `peamk_trackball_bursts_total` and
+`peamk_trackball_read_errors_total`. Counters reset at firmware boot. The
+collector reads every ten seconds, so graphs are sampled diagnostics and do
+not record every instantaneous motion burst.
+
+SQUAL is **not a percentage or a distance measurement**. Compare the same ball
+and similar movement; there is no universal good/bad threshold. Shutter counts
+are not milliseconds. See the [PMW3610 datasheet](https://trackballs.eu/media/Nakabayashi/Digio2/PMW3610DM-SUDU.pdf).
+The battery dashboard adds raw SQUAL, shutter, sample age, sensor state and
+read-error panels with the same styling as existing panels. No fresh SQUAL
+appears until the updated right firmware is flashed and the ball is moved.

@@ -66,9 +66,11 @@ jobs:
       - name: West update
         run: west update --fetch-opt=--filter=tree:0
 
-      - name: Test PMW3610 startup failure recovery
+      - name: Test PMW3610 startup recovery and passive quality cache
         if: matrix.artifact == 'right'
-        run: python3 scripts/check-pmw3610-startup.py zmk-pmw3610-driver
+        run: |
+          python3 scripts/check-pmw3610-startup.py zmk-pmw3610-driver
+          python3 scripts/check-pmw3610-quality.py zmk-pmw3610-driver
 
       - name: West zephyr-export
         run: west zephyr-export

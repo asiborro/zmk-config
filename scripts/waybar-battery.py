@@ -221,7 +221,7 @@ def waybar_output(levels, device_name="PeaMK"):
     }
 
 
-def read_bluez(device_name, include_legacy=True):
+def bluez_access():
     import gi
 
     gi.require_version("Gio", "2.0")
@@ -243,6 +243,11 @@ def read_bluez(device_name, include_legacy=True):
         except GLib.Error as error:
             raise ReadError(str(error)) from error
 
+    return objects, read_value
+
+
+def read_bluez(device_name, include_legacy=True):
+    objects, read_value = bluez_access()
     curves = None
     if CURVE_PATH.exists():
         curves = json.loads(CURVE_PATH.read_text())
