@@ -39,6 +39,18 @@ static int fail_stage, failures_remaining;
 static int stage_calls[ASYNC_INIT_STEP_COUNT];
 static int chip_select_releases, interrupt_enables;
 static int scheduled, scheduled_delay, callbacks;
+static int observed_failures, observed_ready;
+
+static void pmw3610_diagnostics_init(const struct device *dev, uint8_t stage,
+                                   uint8_t retries, int error, bool ready) {
+    struct pixart_data *data = dev->data;
+    assert(stage == data->async_init_step);
+    assert(retries == data->init_retries);
+    assert(error == data->err && ready == data->ready);
+    assert(interrupt_enables == 0);
+    if (error) observed_failures++;
+    if (ready) observed_ready++;
+}
 
 static int fake_stage(const struct device *dev) {
     struct pixart_data *data = dev->data;
@@ -88,6 +100,7 @@ static void check_case(int stage, int failures) {
     failures_remaining = failures;
     memset(stage_calls, 0, sizeof(stage_calls));
     chip_select_releases = interrupt_enables = callbacks = 0;
+    observed_failures = observed_ready = 0;
     scheduled = 1;
 
     while (scheduled) {
@@ -111,6 +124,8 @@ static void check_case(int stage, int failures) {
     assert(data.err == (success ? 0 : -EIO));
     assert(data.init_retries == (failures < 2 ? failures : 2));
     assert(chip_select_releases == failed_attempts);
+    assert(observed_failures == failed_attempts);
+    assert(observed_ready == (success ? 1 : 0));
     assert(stage_calls[ASYNC_INIT_STEP_POWER_UP] == attempts);
     for (int i = 0; i < ASYNC_INIT_STEP_COUNT; i++) {
         /* Every retry starts at reset, even when a late stage failed. */

@@ -17,3 +17,10 @@ config PEAMK_BATTERY_TELEMETRY
     help
       Expose sampled VDDH voltage, inferred USB power, RGB state and sample age.
       On the central, relay one split peripheral's telemetry as well.
+
+config PEAMK_TRACKBALL_TELEMETRY
+    bool "PeaMK passive PMW3610 quality diagnostics"
+    depends on PEAMK_BATTERY_TELEMETRY && PMW3610 && ZMK_SPLIT_ROLE_CENTRAL
+    help
+      Cache SQUAL, shutter, startup status and SPI read errors from existing
+      driver operations. Bluetooth reads do not perform sensor I/O or wake it.

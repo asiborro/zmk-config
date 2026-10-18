@@ -56,9 +56,10 @@ west build -s zmk/app -d build/right -b cosmos_lemon_wireless -- \
 
 Use `peamk_r2c_left` and a separate build directory for the left side. The
 `ZMK_EXTRA_MODULES` argument loads the local Lemon board/boot-key module.
-For right-half builds, this module also applies the startup retry patch at
+For right-half builds, this module also applies the startup retry and passive
+quality-observer patches at
 configure time. The patch helper accepts only the pinned driver revision and
-is safe to run repeatedly. The frozen manifest records the applied patch hash.
+is safe to run repeatedly. The frozen manifest records both applied patch hashes.
 
 The driver makes one normal initialization attempt. If a sensor startup step
 fails, it releases chip select and retries the complete reset/self-test/configure
@@ -74,9 +75,33 @@ the same checks locally after `west update`:
 
 ```sh
 python3 scripts/check-pmw3610-startup.py zmk-pmw3610-driver
+python3 scripts/check-pmw3610-quality.py zmk-pmw3610-driver
 ```
 
 ## Left and right battery levels
+
+### Trackball optical quality
+
+The right firmware exposes PMW3610 **SQUAL**, shutter, sample age, startup status
+and SPI read-error counts over Bluetooth. Values are cached from normal motion
+bursts; reading diagnostics does not perform sensor I/O or reset the idle timer.
+
+The monitor stores these diagnostics every **10 seconds**, independently of
+five-minute battery history. Prometheus scrapes cached metrics every 15 seconds.
+The [battery dashboard](http://ci4.test:3000/d/peamk-battery/peamk-battery) includes
+trackball panels below the battery panels. Move the ball to get new samples;
+values older than 30 seconds are unavailable rather than reported as zero.
+
+Only the **right half** needs flashing for this addition. Both normal and debug
+right images include it. Existing HID/battery handles and battery protocol v2
+are preserved. If diagnostics remain `unsupported` after flashing, reconnect
+to refresh Bluetooth service discovery before considering re-pairing.
+
+SQUAL is a raw register, not a percentage or distance measurement. There is no
+universal good/bad threshold; compare the same ball under similar movement.
+Shutter is a clock-cycle count. This feature measures behavior and does not
+claim to fix the intermittent startup/idle fault. See
+[protocol and metric details](monitoring/README.md#trackball-quality-over-bluetooth).
 
 ### LED brightness and battery testing
 
