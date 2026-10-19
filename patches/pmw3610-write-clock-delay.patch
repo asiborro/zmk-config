@@ -1,0 +1,36 @@
+--- a/src/pmw3610.c
++++ b/src/pmw3610.c
+@@ -188,11 +188,23 @@
+     return 0;
+ }
+ 
++/* PMW3610 datasheet, Write Operation: wait 300 us after requesting the
++ * sensor's SPI clock before writing any target register. The normal SPI
++ * inter-command delay is only 30 us and does not satisfy this requirement.
++ */
++static int spi_clock_enable(const struct device *dev) {
++    int err = _reg_write(dev, PMW3610_REG_SPI_CLK_ON_REQ, PMW3610_SPI_CLOCK_CMD_ENABLE);
++    if (!err) {
++        k_busy_wait(300);
++    }
++    return err;
++}
++
+ static int reg_write(const struct device *dev, uint8_t reg, uint8_t val) {
+     int err;
+ 
+     // enable spi clock
+-    err = _reg_write(dev, PMW3610_REG_SPI_CLK_ON_REQ, PMW3610_SPI_CLOCK_CMD_ENABLE);
++    err = spi_clock_enable(dev);
+     if (unlikely(err != 0)) {
+         return err;
+     }
+@@ -267,7 +279,7 @@
+     int err;
+ 
+     // enable spi clock
+-    err = _reg_write(dev, PMW3610_REG_SPI_CLK_ON_REQ, PMW3610_SPI_CLOCK_CMD_ENABLE);
++    err = spi_clock_enable(dev);
+     if (unlikely(err != 0)) {
+         return err;
+     }

@@ -1,4 +1,4 @@
-"""Apply startup recovery and passive diagnostics to the pinned Inorichi driver."""
+"""Apply startup timing, recovery and passive diagnostics to the pinned driver."""
 
 import argparse
 import hashlib
@@ -9,7 +9,8 @@ import tempfile
 
 REVISION = "1d9c2c68ca76012e1b1e5f6ef02fa5eadc4ca399"
 PATCH = Path(__file__).resolve().parents[1] / "patches/pmw3610-startup-retries.patch"
-PATCHES = (PATCH, PATCH.with_name("pmw3610-quality-observer.patch"))
+PATCHES = (PATCH, PATCH.with_name("pmw3610-quality-observer.patch"),
+           PATCH.with_name("pmw3610-write-clock-delay.patch"))
 
 
 def git(driver, *args):
@@ -19,7 +20,7 @@ def git(driver, *args):
     )
 
 
-def is_applied(driver):
+def is_applied(driver, patches=PATCHES):
     # The patches overlap in the init callback. Checking each reverse diff
     # independently cannot recognize the final tree; compare with a scratch
     # tree produced by applying the complete stack to the pinned sources.
@@ -32,24 +33,30 @@ def is_applied(driver):
             if original.returncode:
                 return False
             (root / name).write_text(original.stdout)
-        for patch in PATCHES:
+        for patch in patches:
             result = git(root, "apply", str(patch))
             if result.returncode:
                 raise RuntimeError(f"Invalid patch stack: {result.stderr.strip()}")
-        return all((Path(driver) / name).exists() and
-                   (Path(driver) / name).read_bytes() == (root / name).read_bytes() for name in names)
+        for name in names:
+            actual, expected = Path(driver) / name, root / name
+            if actual.exists() != expected.exists():
+                return False
+            if expected.exists() and actual.read_bytes() != expected.read_bytes():
+                return False
+        return True
 
 
 def apply_patch(driver):
     revision = git(driver, "rev-parse", "HEAD")
     if revision.returncode or revision.stdout.strip() != REVISION:
         raise RuntimeError(f"PMW3610 patch requires Inorichi revision {REVISION}")
-    if is_applied(driver):
-        return
-    for patch in PATCHES:
-        # Accept a west cache that already has the previous startup-only patch.
-        if git(driver, "apply", "--reverse", "--check", str(patch)).returncode == 0:
-            continue
+    # Recognize complete prefixes, including caches from earlier firmware.
+    # Reverse-checking one overlapping patch cannot recognize a later stack.
+    applied_count = next((count for count in range(len(PATCHES), -1, -1)
+                          if is_applied(driver, PATCHES[:count])), None)
+    if applied_count is None:
+        raise RuntimeError("PMW3610 source differs from the pinned driver and known patch stacks")
+    for patch in PATCHES[applied_count:]:
         checked = git(driver, "apply", "--check", str(patch))
         if checked.returncode:
             raise RuntimeError(f"Cannot apply {patch.name}: {checked.stderr.strip()}")
@@ -75,4 +82,4 @@ if __name__ == "__main__":
         apply_patch(args.driver)
     except RuntimeError as error:
         parser.exit(1, str(error) + "\n")
-    print("PMW3610 patches ready: two startup retries and passive quality observers")
+    print("PMW3610 patches ready: clock startup delay, two retries and passive quality observers")
