@@ -38,6 +38,14 @@
                        <&rgb_ug RGB_EFS_CMD 0>,
                        <&rgb_ug RGB_ON>;
         };
+        // Stop RGB updates before cutting its separate power supply.
+        rgb_power_off: rgb_power_off {
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            wait-ms = <50>;
+            tap-ms = <0>;
+            bindings = <&rgb_ug RGB_OFF>, <&ext_power EP_OFF>;
+        };
     };
 
     behaviors {
@@ -173,9 +181,9 @@
                 // Row 1 - G restores LED power and solid cyan at 10% on both halves.
                 &kp LGUI   &kp LALT   &kp LCTRL  &kp LSHFT  &rgb_restore &none &none
                 &kp C_PREV &kp C_VOL_DN &kp C_VOL_UP &kp C_NEXT &none  &none      &none
-                // Row 2 - BT
+                // Row 2 - BT | K cuts LED power on both halves.
                 &bt BT_SEL 0 &bt BT_SEL 1 &bt BT_SEL 2 &bt BT_SEL 3 &bt BT_CLR &none &none
-                &none      &none      &none      &none      &none      &none      &none
+                &rgb_power_off &none  &none      &none      &none      &none      &none
                 // Row 3
                 &none      &none      &none      &none      &none      &none      &none
                 &none      &none      &none      &none      &none      &none      &none

@@ -164,6 +164,14 @@ Esc/Media + **B** increases brightness, **J** decreases it, **Q** toggles LEDs, 
 **W** cycles effects. The breathing effect in ZMK v0.3 varies brightness separately;
 use the solid preset for a repeatable 10% battery comparison.
 
+For an LEDs-off battery test, hold **Esc/Media** and tap **K**. This stops RGB
+updates, then cuts the separate LED supply on both connected halves. Use **G**
+to restore LED power and the 10% preset. Q and the one-minute idle timer only
+turn off the RGB output; 0% brightness also leaves LED power enabled. After K,
+Q alone cannot restore the power supply. The K shortcut requires only the
+updated right-half keymap; the existing left firmware supports both commands.
+It does not switch off the keyboard, Bluetooth or the separate trackball supply.
+
 The preset provides a way to recover and test the software state; it does not
 prove the cause of a single stuck green LED. If the right remains dark after
 the preset while telemetry reports on at 10%, the LED signal/power path still

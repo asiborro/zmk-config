@@ -126,7 +126,7 @@ or Mac can supply power too.
 # After physically unplugging both halves, with LEDs on:
 peamk-battery mark --power battery --leds on --note 'Normal use, LEDs on'
 
-# After physically toggling LEDs off (hold Esc/Media, tap Q):
+# After cutting LED power with Esc/Media + K in the latest keymap:
 peamk-battery mark --leds off --note 'Normal use, LEDs off'
 
 # Before charging just the right half:
@@ -142,6 +142,13 @@ peamk-battery status
 peamk-battery report --hours 24
 peamk-battery export > battery-history.csv
 ```
+
+Esc/Media + K sends RGB-off followed by LED-power-off to both connected halves;
+Esc/Media + G restores LED power and solid cyan at 10%. Q, 0% brightness and the
+one-minute idle timer leave the LED supply enabled, so those are different
+power conditions. Telemetry reports RGB state and brightness, not a measurement
+of the LED supply. Add a note after using K to distinguish a deliberate power
+cut from ordinary dark/idle LEDs. The trackball supply is separate.
 
 Unknown conditions stay unknown. With old firmware, saved brightness is not
 available, so the collector does not assume the 15% firmware default.
