@@ -146,16 +146,29 @@ to describe the Bluetooth keyboard.
 
 ### LED brightness and battery testing
 
+This keyboard has **23 LEDs on the left and 18 on the right**. The right shield's
+board overlay overrides the shared 23-LED default for both Lemon revisions.
+
 Both halves default to **10% RGB brightness**. LEDs turn off after **60 seconds
 of inactivity** and return to their previous on/off state on activity. The
 existing 15-minute deep-sleep timeout is separate from this LED idle timer.
 
-RGB settings survive firmware updates, so flashing alone will not replace a
-previously saved brightness. After flashing both halves, hold **Esc/Media** and
-tap **G** to apply exactly **10% to both halves**. This preset uses the default
-cyan hue and full saturation while keeping the selected animation. Keep both
-halves connected and powered for at least a minute so the setting can be saved.
-Esc/Media + **B** increases brightness, **J** decreases it, and **Q** toggles LEDs.
+RGB and LED-power settings survive firmware updates, so flashing alone will not
+replace a previously saved off state or brightness. Hold **Esc/Media** and tap
+**G** to explicitly enable LED power and turn on **solid cyan at 10% on both
+halves**. This recovery preset works even when the two halves disagree about
+their saved state. Only the right (central) half needs the updated keymap; it
+sends the existing power and RGB commands to the left. Keep both halves connected
+and use the keyboard for at least a minute to allow the deferred settings save.
+Esc/Media + **B** increases brightness, **J** decreases it, **Q** toggles LEDs, and
+**W** cycles effects. The breathing effect in ZMK v0.3 varies brightness separately;
+use the solid preset for a repeatable 10% battery comparison.
+
+The preset provides a way to recover and test the software state; it does not
+prove the cause of a single stuck green LED. If the right remains dark after
+the preset while telemetry reports on at 10%, the LED signal/power path still
+needs investigation. The LED power control is independent of the sensor's
+3.3 V supply in this board configuration.
 
 Use the normal left/right images for battery comparisons; USB debug logging
 changes power consumption. Verify 10% for both halves in telemetry, then measure

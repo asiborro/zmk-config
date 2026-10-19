@@ -25,6 +25,21 @@
 #define SCROLL 8
 
 / {
+    macros {
+        // Recover independently saved LED-power and RGB state on both halves.
+        // RGB_ON saves the solid 10% preset after the other settings are applied.
+        rgb_restore: rgb_restore {
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            wait-ms = <50>;
+            tap-ms = <0>;
+            bindings = <&ext_power EP_ON>,
+                       <&rgb_ug RGB_COLOR_HSB(180,100,10)>,
+                       <&rgb_ug RGB_EFS 0>,
+                       <&rgb_ug RGB_ON>;
+        };
+    };
+
     behaviors {
         hm: homerow_mod {
             compatible = "zmk,behavior-hold-tap";
@@ -155,8 +170,8 @@
                 // Row 0 - RGB
                 &rgb_ug RGB_TOG &rgb_ug RGB_EFF &rgb_ug RGB_HUI &rgb_ug RGB_SAI &rgb_ug RGB_BRI &none &none
                 &rgb_ug RGB_BRD &none &none     &none      &none      &none      &none
-                // Row 1 - G applies exactly 10% to both halves, including saved RGB settings.
-                &kp LGUI   &kp LALT   &kp LCTRL  &kp LSHFT  &rgb_ug RGB_COLOR_HSB(180,100,10) &none &none
+                // Row 1 - G restores LED power and solid cyan at 10% on both halves.
+                &kp LGUI   &kp LALT   &kp LCTRL  &kp LSHFT  &rgb_restore &none &none
                 &kp C_PREV &kp C_VOL_DN &kp C_VOL_UP &kp C_NEXT &none  &none      &none
                 // Row 2 - BT
                 &bt BT_SEL 0 &bt BT_SEL 1 &bt BT_SEL 2 &bt BT_SEL 3 &bt BT_CLR &none &none
