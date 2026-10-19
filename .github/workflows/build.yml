@@ -70,6 +70,7 @@ jobs:
         if: matrix.artifact == 'right'
         run: |
           python3 scripts/check-pmw3610-startup.py zmk-pmw3610-driver
+          python3 scripts/check-pmw3610-clock.py zmk-pmw3610-driver
           python3 scripts/check-pmw3610-quality.py zmk-pmw3610-driver
           python3 scripts/check-trackball-usb.py
 

@@ -9,7 +9,8 @@ scroll layer, and boot keys are retained.
 - ZMK **v0.3.0**, the latest published stable release checked on 2026-10-16.
 - Cosmos-recommended [Inorichi PMW3610 driver](https://github.com/inorichi/zmk-pmw3610-driver)
   pinned to `1d9c2c68ca76012e1b1e5f6ef02fa5eadc4ca399`, with a local
-  [startup retry patch](patches/pmw3610-startup-retries.patch).
+  [startup retry patch](patches/pmw3610-startup-retries.patch), passive quality
+  observers, and a [SPI clock timing correction](patches/pmw3610-write-clock-delay.patch).
 - Zephyr 3.5 build image pinned by digest to match this ZMK release.
 - Local Lemon board and boot-key module; provenance and license are in
   [`config/UPSTREAM`](config/UPSTREAM) and [`config/LICENSE-ZMK`](config/LICENSE-ZMK).
@@ -56,25 +57,37 @@ west build -s zmk/app -d build/right -b cosmos_lemon_wireless -- \
 
 Use `peamk_r2c_left` and a separate build directory for the left side. The
 `ZMK_EXTRA_MODULES` argument loads the local Lemon board/boot-key module.
-For right-half builds, this module also applies the startup retry and passive
-quality-observer patches at
+For right-half builds, this module also applies the startup retry, passive
+quality-observer and SPI clock timing patches at
 configure time. The patch helper accepts only the pinned driver revision and
-is safe to run repeatedly. The frozen manifest records both applied patch hashes.
+is safe to run repeatedly, including with caches from earlier patch stacks.
+The frozen manifest records all applied patch hashes.
+
+Before each register-write group, the driver now waits **300 microseconds**
+after enabling the sensor's SPI clock. This is required by the
+[PMW3610 datasheet, page 13](https://trackballs.eu/media/Nakabayashi/Digio2/PMW3610DM-SUDU.pdf).
+The pinned upstream driver omitted that wait in both its single-register and
+multi-register write paths. This corrects a protocol timing violation; whether
+it resolves the observed battery startup self-test failure still needs hardware
+validation. It does not change the LED configuration or bypass the self-test.
 
 The driver makes one normal initialization attempt. If a sensor startup step
 fails, it releases chip select and retries the complete reset/self-test/configure
-sequence up to **two more times**, waiting **500 ms** before each retry. Successful
-startup keeps its existing timing. After three failed attempts it stops; debug
+sequence up to **two more times**, waiting **500 ms** before each retry.
+After three failed attempts it stops; debug
 firmware logs the failed step, error code, retries, and final failure. The retries
 address transient initialization failures; they do not establish the cause of
 the intermittent trackball failure or recover failures after initialization.
 
-CI injects failures at every initialization stage to check recovery, the retry
-limit, and that motion interrupts remain disabled until startup succeeds. To run
+CI checks the actual write helpers against the clock-start requirement, including
+demonstrating the failure with the unpatched driver. It also injects failures at
+every initialization stage to check recovery, the retry limit, and that motion
+interrupts remain disabled until startup succeeds. To run
 the same checks locally after `west update`:
 
 ```sh
 python3 scripts/check-pmw3610-startup.py zmk-pmw3610-driver
+python3 scripts/check-pmw3610-clock.py zmk-pmw3610-driver
 python3 scripts/check-pmw3610-quality.py zmk-pmw3610-driver
 ```
 
