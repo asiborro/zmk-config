@@ -293,3 +293,35 @@ are not milliseconds. See the [PMW3610 datasheet](https://trackballs.eu/media/Na
 The battery dashboard adds raw SQUAL, shutter, sample age, sensor state and
 read-error panels with the same styling as existing panels. No fresh SQUAL
 appears until the updated right firmware is flashed and the ball is moved.
+
+## USB trackball measurements
+
+`right-debug` enables `CONFIG_PEAMK_TRACKBALL_USB_TELEMETRY`. A low-priority
+work item copies the same 20-byte packet and emits one structured log line
+every two seconds while USB is configured, not suspended, and CDC ACM DTR is
+asserted. Disconnect/suspend cancels the work; a configured USB connection
+without an open console schedules checks but emits no snapshots. The reporter
+does not read SPI, generate input events, change endpoints or enable a shell.
+Bluetooth telemetry remains available in the same firmware.
+
+The line's payload is `PEAMK_TB1 <uptime_ms> <40 hexadecimal characters>`.
+`uptime_ms` is an unsigned 32-bit millisecond counter, wrapping after about
+49 days. The hexadecimal packet uses the existing Bluetooth protocol above;
+the ordinary logger prefix and ANSI color escapes are not part of the payload.
+No keycodes or pointer coordinates appear in this structured record.
+
+`scripts/trackball_usb.py --serial YOUR_SERIAL --seconds 30` selects the exact
+PeaMK device through `/dev/serial/by-id/`, asserts DTR at 115200 baud, and prints
+decoded JSON with `usb_serial`, `transport`, `received_at` and firmware uptime.
+It requires access to the serial port. An optional `--port` supports an explicitly
+verified device mapping, such as a restricted container passed only that port.
+The reader never writes console commands or uses the 1200-baud bootloader touch.
+
+The first four seconds and first frame are discarded. Subsequent frames must
+advance firmware uptime at approximately their observed arrival cadence;
+duplicate records, rapid bursts of buffered logs and reset discontinuities are
+discarded. Sample age is the firmware's age at emission; it does not measure
+USB/logging latency. Old firmware produces an explicit timeout rather than a
+fabricated zero. The reader drops unrelated console lines and bounds partial
+line buffering. It does not store USB samples in the Bluetooth history or add
+them to the existing keyboard's Prometheus series.

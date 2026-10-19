@@ -71,6 +71,7 @@ jobs:
         run: |
           python3 scripts/check-pmw3610-startup.py zmk-pmw3610-driver
           python3 scripts/check-pmw3610-quality.py zmk-pmw3610-driver
+          python3 scripts/check-trackball-usb.py
 
       - name: West zephyr-export
         run: west zephyr-export
