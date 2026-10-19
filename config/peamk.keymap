@@ -35,7 +35,7 @@
             tap-ms = <0>;
             bindings = <&ext_power EP_ON>,
                        <&rgb_ug RGB_COLOR_HSB(180,100,10)>,
-                       <&rgb_ug RGB_EFS 0>,
+                       <&rgb_ug RGB_EFS_CMD 0>,
                        <&rgb_ug RGB_ON>;
         };
     };
