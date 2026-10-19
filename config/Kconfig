@@ -24,3 +24,10 @@ config PEAMK_TRACKBALL_TELEMETRY
     help
       Cache SQUAL, shutter, startup status and SPI read errors from existing
       driver operations. Bluetooth reads do not perform sensor I/O or wake it.
+
+config PEAMK_TRACKBALL_USB_TELEMETRY
+    bool "PeaMK trackball diagnostics on the USB debug console"
+    depends on PEAMK_TRACKBALL_TELEMETRY && ZMK_USB_LOGGING && UART_LINE_CTRL && LOG
+    help
+      Log the cached quality packet every two seconds while USB is configured,
+      awake and its serial console is open. No extra sensor reads are made.

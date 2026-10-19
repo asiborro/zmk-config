@@ -103,6 +103,34 @@ Shutter is a clock-cycle count. This feature measures behavior and does not
 claim to fix the intermittent startup/idle fault. See
 [protocol and metric details](monitoring/README.md#trackball-quality-over-bluetooth).
 
+### Trackball quality over USB
+
+The **right-debug** image supports both Bluetooth quality telemetry and USB
+quality output. It emits a cached diagnostic packet every two seconds while
+USB is configured, awake and the serial console is open. Reporting stops on
+USB disconnect or suspend and performs no extra sensor reads. The normal
+right image keeps Bluetooth quality telemetry without the USB debug console.
+
+Select the physical keyboard by the serial number in `/dev/serial/by-id/`:
+
+```sh
+python3 scripts/trackball_usb.py --serial YOUR_SERIAL --seconds 30
+```
+
+Run with permission to open that serial device. The reader emits JSON containing
+only trackball diagnostics and the selected USB serial number; other debug
+output is discarded. It discards startup buffers and requires advancing device
+timestamps before reporting values. Move the ball to produce fresh samples.
+USB sample age is measured when the firmware emits its snapshot; it excludes
+any subsequent transport delay.
+
+Only the chosen keyboard's right half needs flashing. The same image works on
+either keyboard when both use the Lemon Wireless v2 right-side configuration.
+A filename such as `cosmos-wired-right-usb-debug.uf2` distinguishes the download;
+it does not restrict the firmware to one physical keyboard. This reader is for
+USB measurements; the existing Bluetooth collector and Grafana series continue
+to describe the Bluetooth keyboard.
+
 ### LED brightness and battery testing
 
 Both halves default to **10% RGB brightness**. LEDs turn off after **60 seconds
