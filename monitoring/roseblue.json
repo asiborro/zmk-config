@@ -3,7 +3,7 @@
   "title": "roseblue",
   "description": "Separate USB diagnostics for roseblue, selected by hardware serial 047B8C32401DC31D. The sensor configuration matches darkblue; the USB debug transport differs. No battery or left-half values are inferred.",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 3,
   "editable": false,
   "tags": [
     "keyboard",
@@ -12,10 +12,10 @@
   ],
   "timezone": "browser",
   "time": {
-    "from": "now-24h",
+    "from": "now-15m",
     "to": "now"
   },
-  "refresh": "15s",
+  "refresh": "10s",
   "annotations": {
     "list": []
   },
@@ -35,18 +35,18 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "USB diagnostics from device **047B8C32401DC31D**, saved every 10 seconds. Move the ball for fresh SQUAL and shutter samples. Idle samples older than 30 seconds are hidden; missing data is never zero. **SQUAL is not a distance measurement or a quality percentage.** The comparisons below use the same PMW3610 settings on both devices; roseblue has USB debugging enabled."
+        "content": "Last captured values stay visible for 24 hours; age and status show freshness. **Move the ball to refresh.** Graphs use 15-second samples; gaps mean no fresh reading. SQUAL is a raw 0\u2013255 register, not a percentage or ball-height measurement."
       }
     },
     {
       "id": 20,
-      "title": "Trackball SQUAL now",
+      "title": "Last captured SQUAL",
       "type": "stat",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Raw register, 0\u2013255. A genuine zero is retained; missing or old samples are not zero.",
+      "description": "Most recent valid reading within the last 24 hours, retained for reference during idle or disconnect. Check sample age and status for freshness. Move the ball to generate a new sample.",
       "gridPos": {
         "x": 0,
         "y": 3,
@@ -57,7 +57,7 @@
         "defaults": {
           "unit": "none",
           "decimals": 0,
-          "noValue": "No recent sample",
+          "noValue": "No captured sample yet",
           "color": {
             "mode": "fixed",
             "fixedColor": "#5794F2"
@@ -82,7 +82,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_trackball_squal{job=\"roseblue\",half=\"right\"}",
+          "expr": "last_over_time((peamk_trackball_squal{job=\"roseblue\",half=\"right\"} >= 0)[24h:15s])",
           "legendFormat": "roseblue",
           "instant": true,
           "range": false,
@@ -96,13 +96,13 @@
     },
     {
       "id": 21,
-      "title": "Trackball shutter now",
+      "title": "Last captured shutter",
       "type": "stat",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Exposure in sensor clock cycles (0\u2013511), not milliseconds.",
+      "description": "Most recent valid reading within the last 24 hours, retained for reference during idle or disconnect. Check sample age and status for freshness. Move the ball to generate a new sample.",
       "gridPos": {
         "x": 6,
         "y": 3,
@@ -113,7 +113,7 @@
         "defaults": {
           "unit": "none",
           "decimals": 0,
-          "noValue": "No recent sample",
+          "noValue": "No captured sample yet",
           "color": {
             "mode": "fixed",
             "fixedColor": "#5794F2"
@@ -138,7 +138,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_trackball_shutter_cycles{job=\"roseblue\",half=\"right\"}",
+          "expr": "last_over_time((peamk_trackball_shutter_cycles{job=\"roseblue\",half=\"right\"} >= 0)[24h:15s])",
           "legendFormat": "roseblue",
           "instant": true,
           "range": false,
@@ -152,13 +152,13 @@
     },
     {
       "id": 22,
-      "title": "Trackball sample age",
+      "title": "Age of sensor sample",
       "type": "stat",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Time since the last successful sensor burst. No extra sensor reads are made while idle.",
+      "description": "Time since the last successful sensor burst. Old samples can mean idle or stalled acquisition; an old reading is not live quality.",
       "gridPos": {
         "x": 12,
         "y": 3,
@@ -169,11 +169,33 @@
         "defaults": {
           "unit": "s",
           "decimals": 0,
-          "noValue": "No recent sample",
+          "noValue": "Unavailable",
           "color": {
             "mode": "fixed",
             "fixedColor": "#5794F2"
-          }
+          },
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "nan",
+                "result": {
+                  "text": "Unavailable",
+                  "color": "gray"
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "Unavailable",
+                  "color": "gray"
+                }
+              }
+            }
+          ]
         },
         "overrides": []
       },
@@ -208,7 +230,7 @@
     },
     {
       "id": 23,
-      "title": "Trackball diagnostics state",
+      "title": "Sensor status",
       "type": "stat",
       "datasource": {
         "type": "prometheus",
@@ -225,11 +247,58 @@
         "defaults": {
           "unit": "none",
           "decimals": 0,
-          "noValue": "No recent sample",
+          "noValue": "Collector unavailable",
           "color": {
             "mode": "fixed",
             "fixedColor": "#5794F2"
-          }
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "Recent sample",
+                  "color": "green"
+                },
+                "2": {
+                  "text": "No recent sample",
+                  "color": "yellow"
+                },
+                "3": {
+                  "text": "Move the ball",
+                  "color": "yellow"
+                },
+                "4": {
+                  "text": "Sensor not ready",
+                  "color": "red"
+                },
+                "5": {
+                  "text": "Sensor error",
+                  "color": "red"
+                },
+                "6": {
+                  "text": "USB debug firmware needed",
+                  "color": "orange"
+                },
+                "7": {
+                  "text": "Waiting for USB frames",
+                  "color": "yellow"
+                },
+                "8": {
+                  "text": "USB disconnected",
+                  "color": "orange"
+                },
+                "9": {
+                  "text": "No diagnostic data",
+                  "color": "orange"
+                },
+                "10": {
+                  "text": "Unsupported firmware",
+                  "color": "orange"
+                }
+              }
+            }
+          ]
         },
         "overrides": []
       },
@@ -245,277 +314,15 @@
         "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
-        "textMode": "name"
+        "textMode": "value"
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_trackball_state_info{job=\"roseblue\",half=\"right\"}",
-          "legendFormat": "{{state}}",
+          "expr": "max((peamk_trackball_state_info{job=\"roseblue\",state=\"ok\"} * 1) or (peamk_trackball_state_info{job=\"roseblue\",state=\"stale\"} * 2) or (peamk_trackball_state_info{job=\"roseblue\",state=\"no_sample\"} * 3) or (peamk_trackball_state_info{job=\"roseblue\",state=\"not_ready\"} * 4) or (peamk_trackball_state_info{job=\"roseblue\",state=\"error\"} * 5) or (peamk_trackball_state_info{job=\"roseblue\",state=\"no_console\"} * 6) or (peamk_trackball_state_info{job=\"roseblue\",state=\"waiting\"} * 7) or (peamk_trackball_state_info{job=\"roseblue\",state=\"disconnected\"} * 8) or (peamk_trackball_state_info{job=\"roseblue\",state=\"unavailable\"} * 9) or (peamk_trackball_state_info{job=\"roseblue\",state=\"unsupported\"} * 10))",
+          "legendFormat": "Status",
           "instant": true,
           "range": false,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          }
-        }
-      ],
-      "maxDataPoints": 2000
-    },
-    {
-      "id": 24,
-      "title": "Trackball surface quality",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "description": "Latest raw SQUAL during movement. Gaps mean old, absent or failed samples, not zero quality.",
-      "gridPos": {
-        "x": 0,
-        "y": 7,
-        "w": 12,
-        "h": 8
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
-          "min": 0,
-          "noValue": "No recent sample",
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "stepAfter",
-            "lineWidth": 2,
-            "fillOpacity": 5,
-            "spanNulls": false,
-            "showPoints": "always",
-            "axisLabel": "",
-            "pointSize": 3
-          },
-          "max": 255
-        },
-        "overrides": []
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        },
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true,
-          "calcs": [
-            "last"
-          ]
-        }
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "peamk_trackball_squal{job=\"roseblue\",half=\"right\"}",
-          "legendFormat": "roseblue",
-          "instant": false,
-          "range": true,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          }
-        }
-      ],
-      "maxDataPoints": 2000
-    },
-    {
-      "id": 25,
-      "title": "Trackball exposure",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "description": "Raw shutter register. Compare with SQUAL on the same surface; values do not directly measure distance.",
-      "gridPos": {
-        "x": 12,
-        "y": 7,
-        "w": 12,
-        "h": 8
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
-          "min": 0,
-          "noValue": "No recent sample",
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "stepAfter",
-            "lineWidth": 2,
-            "fillOpacity": 5,
-            "spanNulls": false,
-            "showPoints": "always",
-            "axisLabel": "",
-            "pointSize": 3
-          },
-          "max": 511
-        },
-        "overrides": []
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        },
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true,
-          "calcs": [
-            "last"
-          ]
-        }
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "peamk_trackball_shutter_cycles{job=\"roseblue\",half=\"right\"}",
-          "legendFormat": "roseblue",
-          "instant": false,
-          "range": true,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          }
-        }
-      ],
-      "maxDataPoints": 2000
-    },
-    {
-      "id": 26,
-      "title": "Trackball acquisition age",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "description": "Increasing age is expected while idle. Age also reveals a sensor that stopped producing samples.",
-      "gridPos": {
-        "x": 0,
-        "y": 15,
-        "w": 12,
-        "h": 8
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "min": 0,
-          "noValue": "No recent sample",
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "stepAfter",
-            "lineWidth": 2,
-            "fillOpacity": 5,
-            "spanNulls": false,
-            "showPoints": "always",
-            "axisLabel": "",
-            "pointSize": 3
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        },
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true,
-          "calcs": [
-            "last"
-          ]
-        }
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "peamk_trackball_sample_age_seconds{job=\"roseblue\",half=\"right\"}",
-          "legendFormat": "roseblue",
-          "instant": false,
-          "range": true,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          }
-        }
-      ],
-      "maxDataPoints": 2000
-    },
-    {
-      "id": 27,
-      "title": "Trackball sensor read errors",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "description": "SPI motion-burst failures since boot. Resets on reboot. This count is separate from USB collection failures.",
-      "gridPos": {
-        "x": 12,
-        "y": 15,
-        "w": 12,
-        "h": 8
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
-          "min": 0,
-          "noValue": "No recent sample",
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "stepAfter",
-            "lineWidth": 2,
-            "fillOpacity": 5,
-            "spanNulls": false,
-            "showPoints": "always",
-            "axisLabel": "",
-            "pointSize": 3
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        },
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true,
-          "calcs": [
-            "last"
-          ]
-        }
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "peamk_trackball_read_errors_total{job=\"roseblue\",half=\"right\"}",
-          "legendFormat": "roseblue",
-          "instant": false,
-          "range": true,
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -535,9 +342,9 @@
       "description": "",
       "gridPos": {
         "x": 0,
-        "y": 23,
+        "y": 7,
         "w": 8,
-        "h": 4
+        "h": 3
       },
       "fieldConfig": {
         "defaults": {
@@ -625,9 +432,9 @@
       "description": "",
       "gridPos": {
         "x": 8,
-        "y": 23,
+        "y": 7,
         "w": 8,
-        "h": 4
+        "h": 3
       },
       "fieldConfig": {
         "defaults": {
@@ -642,11 +449,11 @@
               "type": "value",
               "options": {
                 "0": {
-                  "text": "Disconnected",
+                  "text": "No frames",
                   "color": "orange"
                 },
                 "1": {
-                  "text": "Connected",
+                  "text": "Receiving",
                   "color": "green"
                 }
               }
@@ -715,9 +522,9 @@
       "description": "",
       "gridPos": {
         "x": 16,
-        "y": 23,
+        "y": 7,
         "w": 8,
-        "h": 4
+        "h": 3
       },
       "fieldConfig": {
         "defaults": {
@@ -732,11 +539,11 @@
               "type": "value",
               "options": {
                 "0": {
-                  "text": "Disconnected",
+                  "text": "Offline",
                   "color": "orange"
                 },
                 "1": {
-                  "text": "Connected",
+                  "text": "Online",
                   "color": "green"
                 }
               }
@@ -795,17 +602,17 @@
       "maxDataPoints": 2000
     },
     {
-      "id": 31,
-      "title": "SQUAL comparison",
+      "id": 24,
+      "title": "Trackball surface quality",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Same sensor settings; different physical devices and telemetry transports. Compare similar ball movement. Higher SQUAL alone does not establish better tracking.",
+      "description": "Latest raw SQUAL during movement. Gaps mean old, absent or failed samples, not zero quality.",
       "gridPos": {
         "x": 0,
-        "y": 27,
+        "y": 10,
         "w": 12,
         "h": 8
       },
@@ -841,26 +648,15 @@
           "placement": "bottom",
           "showLegend": true,
           "calcs": [
-            "last"
+            "lastNotNull"
           ]
         }
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_trackball_squal{job=~\"darkblue|peamk-battery\",half=\"right\"}",
-          "legendFormat": "darkblue \u00b7 Bluetooth",
-          "instant": false,
-          "range": true,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          }
-        },
-        {
-          "refId": "B",
           "expr": "peamk_trackball_squal{job=\"roseblue\",half=\"right\"}",
-          "legendFormat": "roseblue \u00b7 USB",
+          "legendFormat": "roseblue",
           "instant": false,
           "range": true,
           "datasource": {
@@ -869,20 +665,21 @@
           }
         }
       ],
-      "maxDataPoints": 2000
+      "maxDataPoints": 2000,
+      "interval": "15s"
     },
     {
-      "id": 32,
-      "title": "Shutter comparison",
+      "id": 25,
+      "title": "Trackball exposure",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Same sensor settings; different physical devices and telemetry transports. Compare similar ball movement. Higher SQUAL alone does not establish better tracking.",
+      "description": "Raw shutter register. Compare with SQUAL on the same surface; values do not directly measure distance.",
       "gridPos": {
         "x": 12,
-        "y": 27,
+        "y": 10,
         "w": 12,
         "h": 8
       },
@@ -918,7 +715,284 @@
           "placement": "bottom",
           "showLegend": true,
           "calcs": [
-            "last"
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "peamk_trackball_shutter_cycles{job=\"roseblue\",half=\"right\"}",
+          "legendFormat": "roseblue",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "maxDataPoints": 2000,
+      "interval": "15s"
+    },
+    {
+      "id": 26,
+      "title": "Trackball acquisition age",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Increasing age is expected while idle. Age also reveals a sensor that stopped producing samples.",
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "noValue": "No recent sample",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 5,
+            "spanNulls": false,
+            "showPoints": "always",
+            "axisLabel": "",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "peamk_trackball_sample_age_seconds{job=\"roseblue\",half=\"right\"}",
+          "legendFormat": "roseblue",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "maxDataPoints": 2000,
+      "interval": "15s"
+    },
+    {
+      "id": 27,
+      "title": "Trackball sensor read errors",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "SPI motion-burst failures since boot. Resets on reboot. This count is separate from USB collection failures.",
+      "gridPos": {
+        "x": 12,
+        "y": 18,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "noValue": "No recent sample",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 5,
+            "spanNulls": false,
+            "showPoints": "always",
+            "axisLabel": "",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "peamk_trackball_read_errors_total{job=\"roseblue\",half=\"right\"}",
+          "legendFormat": "roseblue",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "maxDataPoints": 2000,
+      "interval": "15s"
+    },
+    {
+      "id": 31,
+      "title": "SQUAL comparison",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Same sensor settings; different physical devices and telemetry transports. Compare similar ball movement. Higher SQUAL alone does not establish better tracking.",
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "noValue": "No recent sample",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 5,
+            "spanNulls": false,
+            "showPoints": "always",
+            "axisLabel": "",
+            "pointSize": 3
+          },
+          "max": 255
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "peamk_trackball_squal{job=~\"darkblue|peamk-battery\",half=\"right\"}",
+          "legendFormat": "darkblue \u00b7 Bluetooth",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "peamk_trackball_squal{job=\"roseblue\",half=\"right\"}",
+          "legendFormat": "roseblue \u00b7 USB",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "maxDataPoints": 2000,
+      "interval": "15s"
+    },
+    {
+      "id": 32,
+      "title": "Shutter comparison",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Same sensor settings; different physical devices and telemetry transports. Compare similar ball movement. Higher SQUAL alone does not establish better tracking.",
+      "gridPos": {
+        "x": 12,
+        "y": 26,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "noValue": "No recent sample",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 5,
+            "spanNulls": false,
+            "showPoints": "always",
+            "axisLabel": "",
+            "pointSize": 3
+          },
+          "max": 511
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull"
           ]
         }
       },
@@ -946,7 +1020,8 @@
           }
         }
       ],
-      "maxDataPoints": 2000
+      "maxDataPoints": 2000,
+      "interval": "15s"
     }
   ],
   "links": [
@@ -956,5 +1031,15 @@
       "type": "link",
       "targetBlank": false
     }
-  ]
+  ],
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "15s",
+      "30s",
+      "1m",
+      "5m"
+    ]
+  }
 }
