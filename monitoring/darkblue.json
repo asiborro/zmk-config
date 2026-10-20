@@ -3,7 +3,7 @@
   "title": "darkblue",
   "description": "Left and right battery estimates, supply voltage, inferred USB power, RGB and data freshness. Five-minute history continues while charging. Passive PMW3610 optical quality and sensor status collected every ten seconds.",
   "schemaVersion": 39,
-  "version": 6,
+  "version": 7,
   "editable": false,
   "tags": [
     "keyboard",
@@ -123,7 +123,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "(100 * peamk_battery_estimated_ratio{job=~\"darkblue|peamk-battery\",half=\"left\"}) or on(half) (101 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"left\",state=~\"usb\"}) or on(half) (102 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"left\",state=~\"settling\"}) or on(half) (103 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"left\",state=~\"uncertain\"}) or on(half) (104 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"left\",state=~\"unavailable|stale|disconnected\"})",
+          "expr": "(100 * peamk_battery_estimated_ratio{job=~\"darkblue|peamk-battery\",half=\"left\"}) or on(half,job) (101 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"left\",state=~\"usb\"}) or on(half,job) (102 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"left\",state=~\"settling\"}) or on(half,job) (103 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"left\",state=~\"uncertain\"}) or on(half,job) (104 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"left\",state=~\"unavailable|stale|disconnected\"})",
           "instant": true,
           "range": false,
           "legendFormat": "Left",
@@ -220,7 +220,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "(100 * peamk_battery_estimated_ratio{job=~\"darkblue|peamk-battery\",half=\"right\"}) or on(half) (101 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"right\",state=~\"usb\"}) or on(half) (102 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"right\",state=~\"settling\"}) or on(half) (103 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"right\",state=~\"uncertain\"}) or on(half) (104 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"right\",state=~\"unavailable|stale|disconnected\"})",
+          "expr": "(100 * peamk_battery_estimated_ratio{job=~\"darkblue|peamk-battery\",half=\"right\"}) or on(half,job) (101 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"right\",state=~\"usb\"}) or on(half,job) (102 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"right\",state=~\"settling\"}) or on(half,job) (103 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"right\",state=~\"uncertain\"}) or on(half,job) (104 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"right\",state=~\"unavailable|stale|disconnected\"})",
           "instant": true,
           "range": false,
           "legendFormat": "Right",
@@ -914,7 +914,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_usb_power{job=~\"darkblue|peamk-battery\"} and on(half) peamk_condition_source_info{job=~\"darkblue|peamk-battery\",source=~\"voltage-inference|annotation\"}",
+          "expr": "peamk_usb_power{job=~\"darkblue|peamk-battery\"} and on(half,job) peamk_condition_source_info{job=~\"darkblue|peamk-battery\",source=~\"voltage-inference|annotation\"}",
           "legendFormat": "{{half}}",
           "range": true,
           "datasource": {
@@ -1509,7 +1509,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_reporting_state_info{job=~\"darkblue|peamk-battery\"} * on(half) group_left(source) peamk_condition_source_info{job=~\"darkblue|peamk-battery\"}",
+          "expr": "peamk_reporting_state_info{job=~\"darkblue|peamk-battery\"} * on(half,job) group_left(source) peamk_condition_source_info{job=~\"darkblue|peamk-battery\"}",
           "instant": true,
           "range": false,
           "format": "table"
