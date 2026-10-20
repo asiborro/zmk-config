@@ -71,6 +71,22 @@ class BatteryReadingsTest(unittest.TestCase):
         levels = battery.battery_levels(self.objects, lambda *_: self.fail("Unexpected read"))
         self.assertEqual(battery.waybar_output(levels)["text"], "PeaMK L -- R --")
 
+    def test_exact_address_survives_rename_and_never_reads_secondary(self):
+        self.objects[self.device][battery.DEVICE].update(Address="AA:BB:CC:DD:EE:01")
+        self.objects["/second"] = {battery.DEVICE: {
+            "Connected": True, "Alias": "PeaMK", "Address": "AA:BB:CC:DD:EE:02"}}
+        with self.assertRaises(battery.ReadError):
+            battery.battery_levels(self.objects, self.read)
+        result = battery.battery_levels(self.objects, self.read, "darkblue", address="aa:bb:cc:dd:ee:01")
+        self.assertEqual((result["left"], result["right"]), (82, 49))
+        self.objects[self.device][battery.DEVICE]["Alias"] = "darkblue"
+        result = battery.battery_levels(self.objects, self.read, "darkblue", address="AA:BB:CC:DD:EE:01")
+        self.assertEqual(result["right"], 49)
+        self.objects[self.device][battery.DEVICE]["Connected"] = False
+        result = battery.battery_levels(self.objects, lambda *_: self.fail("Read the other keyboard"),
+                                        "PeaMK", address="AA:BB:CC:DD:EE:01")
+        self.assertFalse(result["connected"])
+
 
 if __name__ == "__main__":
     unittest.main()

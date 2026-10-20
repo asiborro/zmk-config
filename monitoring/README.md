@@ -1,4 +1,4 @@
-# Battery measurements
+# darkblue and roseblue measurements
 
 The Linux host samples both Bluetooth battery services every **five minutes**.
 It keeps every attempt, including missing readings, in
@@ -17,7 +17,7 @@ Polling also means these tests include the small monitoring workload.
 
 ## Telemetry firmware
 
-Flash both `cosmos-lemon-wireless-*-telemetry.uf2` images. The right relays the
+Flash `darkblue-left` and `darkblue-right` for the main split keyboard. The right relays the
 left's telemetry through its existing split connection. The left never needs
 a direct connection to the computer. Pairings and keyboard/mouse descriptors
 are preserved; the additional GATT service is appended after existing services.
@@ -117,30 +117,30 @@ using any values. No telemetry operation writes settings or changes RGB.
 ## Start and maintain a test
 
 With telemetry firmware, USB and RGB labels update automatically. With older
-firmware, `peamk-battery mark` records labels only and cannot detect charging.
+firmware, `darkblue-battery mark` records labels only and cannot detect charging.
 It remains useful for capacity and experiment notes with either firmware.
 Never infer USB absence merely because this computer cannot see it: a charger
 or Mac can supply power too.
 
 ```sh
 # After physically unplugging both halves, with LEDs on:
-peamk-battery mark --power battery --leds on --note 'Normal use, LEDs on'
+darkblue-battery mark --power battery --leds on --note 'Normal use, LEDs on'
 
 # After cutting LED power with Esc/Media + K in the latest keymap:
-peamk-battery mark --leds off --note 'Normal use, LEDs off'
+darkblue-battery mark --leds off --note 'Normal use, LEDs off'
 
 # Before charging just the right half:
-peamk-battery mark --half right --power usb
+darkblue-battery mark --half right --power usb
 
 # After unplugging just the right half:
-peamk-battery mark --half right --power battery
+darkblue-battery mark --half right --power battery
 
 # Optional: known brightness or a different battery capacity:
-peamk-battery mark --half both --brightness 15 --capacity-mah 750
+darkblue-battery mark --half both --brightness 15 --capacity-mah 750
 
-peamk-battery status
-peamk-battery report --hours 24
-peamk-battery export > battery-history.csv
+darkblue-battery status
+darkblue-battery report --hours 24
+darkblue-battery export > battery-history.csv
 ```
 
 Esc/Media + K sends RGB-off followed by LED-power-off to both connected halves;
@@ -176,7 +176,8 @@ specifies 100 mA default charging, so larger batteries also charge much longer.
 ## Metrics and dashboard
 
 After deployment, the dashboard is at
-<http://ci4.test:3000/d/peamk-battery/peamk-battery>.
+[darkblue](http://ci4.test:3000/d/peamk-battery/darkblue) and
+[roseblue](http://ci4.test:3000/d/roseblue/roseblue).
 
 - `peamk_battery_reported_ratio{half="left|right"}`: raw estimated charge, 0–1.
 - `peamk_battery_estimated_ratio{half,method}`: usable charge estimate, absent on USB.
@@ -206,8 +207,9 @@ measurement or a validated prediction of remaining runtime.
 
 Requires Python 3, PyGObject/Gio, BlueZ and systemd user services. Installation
 does not flash firmware. `install-local.sh` installs the collector, CLI,
-and both user service files, and starts only the local collector by default.
+and the user service files, and starts both collectors by default.
 Pass `--with-tunnel` to also start sending data to the configured server.
+An already enabled legacy tunnel is migrated automatically.
 The tunnel uses existing SSH access to `ci4.test` and
 binds only to loopback at both ends; no new LAN-facing port is opened.
 
@@ -226,22 +228,22 @@ monitoring/install-local.sh
 # Once this is the intended Prometheus destination:
 monitoring/install-local.sh --with-tunnel
 python3 monitoring/deploy-prometheus.py ci4.test
-systemctl --user status peamk-battery peamk-battery-tunnel
-journalctl --user -u peamk-battery --since today
+systemctl --user status darkblue-battery roseblue-trackball keyboard-telemetry-tunnel
+journalctl --user -u darkblue-battery -u roseblue-trackball --since today
 curl http://127.0.0.1:19108/metrics
 ```
 
-The deployment adds only the job in `prometheus-job.yml`, validates the complete
+The deployment adds the two jobs in `prometheus-job.yml`, validates the complete
 config with the server's `promtool`, backs up the previous config, and signals
 Prometheus to reload. If Docker still sees a replaced configuration file, it
-restarts only Prometheus to refresh that mount. It installs the dashboard in the existing provisioned
+restarts only Prometheus to refresh that mount. It installs both dashboards in the existing provisioned
 folder. Existing Pi jobs and dashboards are preserved. Re-run this deployment
 after rebuilding `/opt/monitoring` from its separate infrastructure repository,
 which otherwise replaces these additions. Local samples remain available when
 the tunnel/server is unavailable; they are not automatically backfilled into
 Prometheus.
 
-Stop with `systemctl --user disable --now peamk-battery-tunnel peamk-battery`.
+Stop with `systemctl --user disable --now keyboard-telemetry-tunnel darkblue-battery roseblue-trackball`.
 This preserves the history for later analysis.
 
 ## Trackball quality over Bluetooth
@@ -303,7 +305,7 @@ appears until the updated right firmware is flashed and the ball is moved.
 
 ## USB trackball measurements
 
-`right-debug` enables `CONFIG_PEAMK_TRACKBALL_USB_TELEMETRY`. A low-priority
+`darkblue-right-debug` and `roseblue-right` enable `CONFIG_PEAMK_TRACKBALL_USB_TELEMETRY`. A low-priority
 work item copies the same 20-byte packet and emits one structured log line
 every two seconds while USB is configured, not suspended, and CDC ACM DTR is
 asserted. Disconnect/suspend cancels the work; a configured USB connection
@@ -318,7 +320,7 @@ the ordinary logger prefix and ANSI color escapes are not part of the payload.
 No keycodes or pointer coordinates appear in this structured record.
 
 `scripts/trackball_usb.py --serial YOUR_SERIAL --seconds 30` selects the exact
-PeaMK device through `/dev/serial/by-id/`, asserts DTR at 115200 baud, and prints
+device through `/dev/serial/by-id/`, asserts DTR at 115200 baud, and prints
 decoded JSON with `usb_serial`, `transport`, `received_at` and firmware uptime.
 It requires access to the serial port. An optional `--port` supports an explicitly
 verified device mapping, such as a restricted container passed only that port.
@@ -330,5 +332,50 @@ duplicate records, rapid bursts of buffered logs and reset discontinuities are
 discarded. Sample age is the firmware's age at emission; it does not measure
 USB/logging latency. Old firmware produces an explicit timeout rather than a
 fabricated zero. The reader drops unrelated console lines and bounds partial
-line buffering. It does not store USB samples in the Bluetooth history or add
-them to the existing keyboard's Prometheus series.
+line buffering. The one-shot reader prints JSON. The persistent roseblue collector described
+below stores those samples in its own history and Prometheus job.
+
+## Separate device collection
+
+| Device | Selection | Database | Cached metrics |
+| --- | --- | --- | --- |
+| darkblue | Bluetooth `D5:B0:5B:EC:16:5D` | `~/.local/share/peamk-battery/history.sqlite3` | `127.0.0.1:19108` |
+| roseblue | USB serial `047B8C32401DC31D` | `~/.local/share/roseblue/history.sqlite3` | `127.0.0.1:19109` |
+
+Both services run indefinitely, including idle, charging and unplugged periods.
+Roseblue reads structured USB frames continuously and stores a snapshot every
+10 seconds. It retries the exact serial after disconnect, never opens the
+bootloader port, and drops cached quality after eight seconds without frames.
+A database is bound to its device serial and rejects a different device.
+`no_console` means the hardware is attached but its USB diagnostics port is
+absent; flash the named roseblue-right image. `waiting` means the console is
+open but no advancing structured frames have arrived yet. Move the ball for
+fresh optical readings; `stale` is expected when no recent sensor burst exists.
+
+The roseblue dashboard contains only USB/sensor diagnostics and comparison
+plots against darkblue. It does not invent a left half or battery measurements
+for the USB-only collection. The firmware driver, CPI, polling and motion
+transform initially match; USB logging and the device names differ.
+
+The firmware's existing `PEAMK_*` protocol identifiers, metric prefixes,
+darkblue's historical database path and original Grafana UID are retained for
+compatibility. Display names, service names and current scrape jobs use the new
+names. Darkblue's dashboard includes the old `peamk-battery` job when querying
+history. No existing samples are deleted or relabeled. The old CLI is an alias
+for `darkblue-battery`. Waybar pins darkblue's Bluetooth address and preserves
+the existing widget style.
+
+Serial access is required for the user running `roseblue-trackball.service`.
+This host's exact-device rule grants the `asiborro` group access to roseblue's
+firmware console, without changing access to other serial devices or its
+bootloader. Install once before plugging in the newly flashed device:
+
+```sh
+sudo install -m 644 monitoring/70-roseblue-console.rules /etc/udev/rules.d/
+sudo udevadm control --reload-rules
+```
+
+The single SSH tunnel forwards both loopback ports; other Pi monitoring jobs
+are preserved. Adjust the hardware IDs in the service files when installing
+this repository for different physical devices, and adjust the group and serial
+in the udev rule if using a different user/device.

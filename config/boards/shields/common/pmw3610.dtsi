@@ -1,21 +1,7 @@
-/*
- * Copyright (c) 2022 The ZMK Contributors
- *
- * SPDX-License-Identifier: MIT
- */
-
-#include "peamk_r2c.dtsi"
+/* Shared PMW3610 wiring and tuning for the two keyboard configurations. */
 #include <zephyr/dt-bindings/input/input-event-codes.h>
 #include <dt-bindings/zmk/input_transform.h>
 #include <input/processors.dtsi>
-
-&bootloader_key_right {
-    status = "okay";
-};
-
-/ {
-
-};
 
 /*
  * PMW3610 Trackball via VIK
@@ -61,8 +47,4 @@
             input-processors = <&scroll_scaler 1 16 &tb_transform (INPUT_TRANSFORM_XY_SWAP | INPUT_TRANSFORM_X_INVERT | INPUT_TRANSFORM_Y_INVERT) &zip_xy_to_scroll_mapper>;
         };
     };
-};
-
-&default_transform {
-    col-offset = <7>;
 };

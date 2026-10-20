@@ -1,0 +1,11 @@
+/* Right central: its own matrix, with shared sensor wiring and tuning. */
+#include "roseblue_r2c.dtsi"
+#include "../common/pmw3610.dtsi"
+
+&bootloader_key_right {
+    status = "okay";
+};
+
+&default_transform {
+    col-offset = <7>;
+};

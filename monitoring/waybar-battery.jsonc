@@ -2,7 +2,7 @@
 // "custom/peamk-battery" to modules-right. The installer supplies the CSS.
 {
     "custom/peamk-battery": {
-        "exec": "python3 ~/.config/waybar/scripts/waybar-battery.py",
+        "exec": "python3 ~/.config/waybar/scripts/waybar-battery.py --device darkblue --address D5:B0:5B:EC:16:5D",
         "return-type": "json",
         "interval": 5,
         "format": "{}",

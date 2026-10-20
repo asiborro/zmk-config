@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "peamk_r2c.dtsi"
+#include "darkblue_r2c.dtsi"
 
 &bootloader_key_left {
     status = "okay";

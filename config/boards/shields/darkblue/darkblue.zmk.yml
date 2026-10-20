@@ -1,0 +1,13 @@
+file_format: "1"
+id: darkblue
+name: darkblue
+type: shield
+url: https://github.com/asiborro/zmk-config
+features:
+  - keys
+  - studio
+siblings:
+  - darkblue_r2c_left
+  - darkblue_c2r_left
+  - darkblue_r2c_right
+  - darkblue_c2r_right

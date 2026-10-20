@@ -1,4 +1,4 @@
-#include "peamk.dtsi"
+#include "roseblue.dtsi"
 
 / {
   kscan0: kscan_0 {

@@ -1,9 +1,9 @@
 {
   "uid": "peamk-battery",
-  "title": "PeaMK battery",
+  "title": "darkblue",
   "description": "Left and right battery estimates, supply voltage, inferred USB power, RGB and data freshness. Five-minute history continues while charging. Passive PMW3610 optical quality and sensor status collected every ten seconds.",
   "schemaVersion": 39,
-  "version": 5,
+  "version": 7,
   "editable": false,
   "tags": [
     "keyboard",
@@ -123,7 +123,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "(100 * peamk_battery_estimated_ratio{job=\"peamk-battery\",half=\"left\"}) or on(half) (101 * peamk_reporting_state_info{job=\"peamk-battery\",half=\"left\",state=~\"usb\"}) or on(half) (102 * peamk_reporting_state_info{job=\"peamk-battery\",half=\"left\",state=~\"settling\"}) or on(half) (103 * peamk_reporting_state_info{job=\"peamk-battery\",half=\"left\",state=~\"uncertain\"}) or on(half) (104 * peamk_reporting_state_info{job=\"peamk-battery\",half=\"left\",state=~\"unavailable|stale|disconnected\"})",
+          "expr": "(100 * peamk_battery_estimated_ratio{job=~\"darkblue|peamk-battery\",half=\"left\"}) or on(half,job) (101 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"left\",state=~\"usb\"}) or on(half,job) (102 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"left\",state=~\"settling\"}) or on(half,job) (103 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"left\",state=~\"uncertain\"}) or on(half,job) (104 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"left\",state=~\"unavailable|stale|disconnected\"})",
           "instant": true,
           "range": false,
           "legendFormat": "Left",
@@ -220,7 +220,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "(100 * peamk_battery_estimated_ratio{job=\"peamk-battery\",half=\"right\"}) or on(half) (101 * peamk_reporting_state_info{job=\"peamk-battery\",half=\"right\",state=~\"usb\"}) or on(half) (102 * peamk_reporting_state_info{job=\"peamk-battery\",half=\"right\",state=~\"settling\"}) or on(half) (103 * peamk_reporting_state_info{job=\"peamk-battery\",half=\"right\",state=~\"uncertain\"}) or on(half) (104 * peamk_reporting_state_info{job=\"peamk-battery\",half=\"right\",state=~\"unavailable|stale|disconnected\"})",
+          "expr": "(100 * peamk_battery_estimated_ratio{job=~\"darkblue|peamk-battery\",half=\"right\"}) or on(half,job) (101 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"right\",state=~\"usb\"}) or on(half,job) (102 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"right\",state=~\"settling\"}) or on(half,job) (103 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"right\",state=~\"uncertain\"}) or on(half,job) (104 * peamk_reporting_state_info{job=~\"darkblue|peamk-battery\",half=\"right\",state=~\"unavailable|stale|disconnected\"})",
           "instant": true,
           "range": false,
           "legendFormat": "Right",
@@ -310,7 +310,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_bluetooth_connected{job=\"peamk-battery\"}",
+          "expr": "peamk_bluetooth_connected{job=~\"darkblue|peamk-battery\"}",
           "legendFormat": "Bluetooth",
           "range": false,
           "datasource": {
@@ -387,7 +387,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_sample_age_seconds{job=\"peamk-battery\"}",
+          "expr": "peamk_sample_age_seconds{job=~\"darkblue|peamk-battery\"}",
           "legendFormat": "Age",
           "range": false,
           "datasource": {
@@ -484,7 +484,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_battery_estimated_ratio{job=\"peamk-battery\"}",
+          "expr": "peamk_battery_estimated_ratio{job=~\"darkblue|peamk-battery\"}",
           "legendFormat": "{{half}}",
           "range": true,
           "datasource": {
@@ -580,7 +580,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_battery_discharge_ratio{job=\"peamk-battery\"}",
+          "expr": "peamk_battery_discharge_ratio{job=~\"darkblue|peamk-battery\"}",
           "legendFormat": "{{half}} \u00b7 LEDs {{leds}}",
           "range": true,
           "datasource": {
@@ -669,7 +669,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_battery_read_success{job=\"peamk-battery\"}",
+          "expr": "peamk_battery_read_success{job=~\"darkblue|peamk-battery\"}",
           "legendFormat": "{{half}}",
           "range": false,
           "datasource": {
@@ -747,7 +747,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_battery_capacity_coulombs{job=\"peamk-battery\"} / 3.6",
+          "expr": "peamk_battery_capacity_coulombs{job=~\"darkblue|peamk-battery\"} / 3.6",
           "legendFormat": "{{half}}",
           "range": false,
           "datasource": {
@@ -825,7 +825,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_supply_voltage_volts{job=\"peamk-battery\"}",
+          "expr": "peamk_supply_voltage_volts{job=~\"darkblue|peamk-battery\"}",
           "instant": true,
           "range": false,
           "legendFormat": "{{half}}",
@@ -914,7 +914,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_usb_power{job=\"peamk-battery\"} and on(half) peamk_condition_source_info{job=\"peamk-battery\",source=~\"voltage-inference|annotation\"}",
+          "expr": "peamk_usb_power{job=~\"darkblue|peamk-battery\"} and on(half,job) peamk_condition_source_info{job=~\"darkblue|peamk-battery\",source=~\"voltage-inference|annotation\"}",
           "legendFormat": "{{half}}",
           "range": true,
           "datasource": {
@@ -1002,7 +1002,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_leds_enabled{job=\"peamk-battery\"}",
+          "expr": "peamk_leds_enabled{job=~\"darkblue|peamk-battery\"}",
           "legendFormat": "{{half}}",
           "range": true,
           "datasource": {
@@ -1098,7 +1098,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_led_brightness_ratio{job=\"peamk-battery\"}",
+          "expr": "peamk_led_brightness_ratio{job=~\"darkblue|peamk-battery\"}",
           "legendFormat": "{{half}}",
           "range": true,
           "datasource": {
@@ -1194,7 +1194,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_battery_read_success{job=\"peamk-battery\"}",
+          "expr": "peamk_battery_read_success{job=~\"darkblue|peamk-battery\"}",
           "legendFormat": "{{half}}",
           "range": true,
           "datasource": {
@@ -1290,7 +1290,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_supply_voltage_volts{job=\"peamk-battery\"}",
+          "expr": "peamk_supply_voltage_volts{job=~\"darkblue|peamk-battery\"}",
           "legendFormat": "{{half}}",
           "range": true,
           "datasource": {
@@ -1385,7 +1385,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_voltage_sample_age_seconds{job=\"peamk-battery\"}",
+          "expr": "peamk_voltage_sample_age_seconds{job=~\"darkblue|peamk-battery\"}",
           "legendFormat": "{{half}}",
           "range": true,
           "datasource": {
@@ -1481,7 +1481,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_battery_reported_ratio{job=\"peamk-battery\"}",
+          "expr": "peamk_battery_reported_ratio{job=~\"darkblue|peamk-battery\"}",
           "legendFormat": "{{half}}",
           "range": true,
           "datasource": {
@@ -1509,7 +1509,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_reporting_state_info{job=\"peamk-battery\"} * on(half) group_left(source) peamk_condition_source_info{job=\"peamk-battery\"}",
+          "expr": "peamk_reporting_state_info{job=~\"darkblue|peamk-battery\"} * on(half,job) group_left(source) peamk_condition_source_info{job=~\"darkblue|peamk-battery\"}",
           "instant": true,
           "range": false,
           "format": "table"
@@ -1617,7 +1617,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_trackball_squal{job=\"peamk-battery\",half=\"right\"}",
+          "expr": "peamk_trackball_squal{job=~\"darkblue|peamk-battery\",half=\"right\"}",
           "legendFormat": "Right",
           "instant": true,
           "range": false,
@@ -1673,7 +1673,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_trackball_shutter_cycles{job=\"peamk-battery\",half=\"right\"}",
+          "expr": "peamk_trackball_shutter_cycles{job=~\"darkblue|peamk-battery\",half=\"right\"}",
           "legendFormat": "Right",
           "instant": true,
           "range": false,
@@ -1729,7 +1729,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_trackball_sample_age_seconds{job=\"peamk-battery\",half=\"right\"}",
+          "expr": "peamk_trackball_sample_age_seconds{job=~\"darkblue|peamk-battery\",half=\"right\"}",
           "legendFormat": "Right",
           "instant": true,
           "range": false,
@@ -1785,7 +1785,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_trackball_state_info{job=\"peamk-battery\",half=\"right\"}",
+          "expr": "peamk_trackball_state_info{job=~\"darkblue|peamk-battery\",half=\"right\"}",
           "legendFormat": "{{state}}",
           "instant": true,
           "range": false,
@@ -1851,7 +1851,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_trackball_squal{job=\"peamk-battery\",half=\"right\"}",
+          "expr": "peamk_trackball_squal{job=~\"darkblue|peamk-battery\",half=\"right\"}",
           "legendFormat": "Right",
           "instant": false,
           "range": true,
@@ -1917,7 +1917,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_trackball_shutter_cycles{job=\"peamk-battery\",half=\"right\"}",
+          "expr": "peamk_trackball_shutter_cycles{job=~\"darkblue|peamk-battery\",half=\"right\"}",
           "legendFormat": "Right",
           "instant": false,
           "range": true,
@@ -1982,7 +1982,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_trackball_sample_age_seconds{job=\"peamk-battery\",half=\"right\"}",
+          "expr": "peamk_trackball_sample_age_seconds{job=~\"darkblue|peamk-battery\",half=\"right\"}",
           "legendFormat": "Right",
           "instant": false,
           "range": true,
@@ -2047,7 +2047,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_trackball_read_errors_total{job=\"peamk-battery\",half=\"right\"}",
+          "expr": "peamk_trackball_read_errors_total{job=~\"darkblue|peamk-battery\",half=\"right\"}",
           "legendFormat": "Right",
           "instant": false,
           "range": true,
@@ -2058,6 +2058,14 @@
         }
       ],
       "maxDataPoints": 2000
+    }
+  ],
+  "links": [
+    {
+      "title": "roseblue \u00b7 USB trackball",
+      "url": "/d/roseblue/roseblue",
+      "type": "link",
+      "targetBlank": false
     }
   ]
 }

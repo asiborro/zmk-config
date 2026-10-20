@@ -1,0 +1,13 @@
+file_format: "1"
+id: roseblue
+name: roseblue
+type: shield
+url: https://github.com/asiborro/zmk-config
+features:
+  - keys
+  - studio
+siblings:
+  - roseblue_r2c_left
+  - roseblue_c2r_left
+  - roseblue_r2c_right
+  - roseblue_c2r_right
