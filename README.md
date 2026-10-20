@@ -1,8 +1,19 @@
-# Cosmos Lemon Wireless firmware
+# darkblue and roseblue firmware
 
-ZMK configuration for a split Cosmos keyboard with a PMW3610 trackball on
-the **right (central)** half. The existing Colemak-DH keymap, mouse transform,
-scroll layer, and boot keys are retained.
+Two independent ZMK configurations for Cosmos Lemon Wireless v2 hardware:
+**darkblue** is the split keyboard; **roseblue** is currently the secondary
+trackball with no physical keys. Both start with the same keymap and matrix,
+so keys can be added or mapped differently later. The USB/Bluetooth device
+names are `darkblue` and `roseblue`.
+
+Each owns `config/<name>.keymap`, `<name>.conf`, side-specific `.conf` files,
+and `config/boards/shields/<name>/`. Change key count and logical positions
+in `<name>.dtsi`, electrical scanning in `<name>_r2c.dtsi`, bindings in its
+keymap, and LED counts in its own `boards/` overlays. These are separate files,
+not aliases or links to the other keyboard. The controller definitions,
+PMW3610 wiring/tuning, driver patches and telemetry implementation are shared.
+Roseblue retains the right-central/split configuration for now, matching
+darkblue; it does not require a left half to use the trackball over USB.
 
 ## Firmware versions
 
@@ -26,10 +37,12 @@ Kconfig settings, and a manifest recording exact dependency revisions.
 
 | Artifact prefix | Purpose |
 | --- | --- |
-| `left-` | Left peripheral firmware |
-| `right-` | Right central firmware with trackball |
+| `darkblue-left-` | Main keyboard left peripheral |
+| `darkblue-right-` | Main keyboard right central, normal battery build |
+| `darkblue-right-debug-` | Optional main keyboard right with USB diagnostics |
+| `roseblue-left-` | Secondary left configuration, available for future keys |
+| `roseblue-right-` | Secondary trackball, USB diagnostics enabled |
 | `reset-` | Optional recovery image; clears saved settings and pairings |
-| `right-debug-` | Right firmware with USB sensor diagnostics |
 
 This keyboard uses **v0.2 (v2) Lemon Wireless controllers**. All automatic
 builds select `cosmos_lemon_wireless`, the target for v0.3 and earlier. The board
@@ -44,19 +57,29 @@ drives after double-tapping each controller's reset button. Use normal firmware
 for everyday battery operation. The reset image is for recovery, not a required
 step in this update; flashing it erases existing pairings.
 
-For a local build with the Zephyr 3.5 toolchain, run from this repository:
+For local builds, Docker uses the same pinned SDK and the same Python build
+command as CI. Both read **`build.yaml`**; no second target list is maintained.
+All six targets build by default:
 
 ```sh
-west init -l config
-west update --fetch-opt=--filter=tree:0
-west zephyr-export
-west build -s zmk/app -d build/right -b cosmos_lemon_wireless -- \
-  -DSHIELD=peamk_r2c_right \
-  -DZMK_CONFIG="$PWD/config" -DZMK_EXTRA_MODULES="$PWD/config"
+bash scripts/build-local.sh
+bash scripts/build-local.sh --list
+bash scripts/build-local.sh --keyboard darkblue
+bash scripts/build-local.sh --keyboard roseblue
+bash scripts/build-local.sh --artifact roseblue-right --no-update
+# Optional dedicated cache on another filesystem (starts with an empty directory):
+ZMK_BUILD_WORKSPACE=/tmp/zmk-build bash scripts/build-local.sh
 ```
 
-Use `peamk_r2c_left` and a separate build directory for the left side. The
-`ZMK_EXTRA_MODULES` argument loads the local Lemon board/boot-key module.
+Outputs are in `artifacts/<artifact>-<board>/zephyr/zmk.uf2`, under the chosen
+workspace. Each includes compiled settings, devicetree, ELF, dependency
+manifest and target metadata. Existing output for a target is removed before
+building it, so a failed build cannot leave an old UF2 labeled as current.
+`--no-update` reuses downloaded dependencies; `--board cosmos_lemon_wireless_v4`
+is only for v4 hardware. With a native Zephyr 3.5 SDK, Python/PyYAML and west,
+`python3 scripts/build-firmware.py` builds the same matrix without Docker.
+
+The local Lemon board/boot-key module is included automatically.
 For right-half builds, this module also applies the startup retry, passive
 quality-observer and SPI clock timing patches at
 configure time. The patch helper accepts only the pinned driver revision and
@@ -101,7 +124,7 @@ bursts; reading diagnostics does not perform sensor I/O or reset the idle timer.
 
 The monitor stores these diagnostics every **10 seconds**, independently of
 five-minute battery history. Prometheus scrapes cached metrics every 15 seconds.
-The [battery dashboard](http://ci4.test:3000/d/peamk-battery/peamk-battery) includes
+The [battery dashboard](http://ci4.test:3000/d/peamk-battery/darkblue) includes
 trackball panels below the battery panels. Move the ball to get new samples;
 values older than 30 seconds are unavailable rather than reported as zero.
 
@@ -118,7 +141,7 @@ claim to fix the intermittent startup/idle fault. See
 
 ### Trackball quality over USB
 
-The **right-debug** image supports both Bluetooth quality telemetry and USB
+The **darkblue-right-debug** or **roseblue-right** image supports both Bluetooth quality telemetry and USB
 quality output. It emits a cached diagnostic packet every two seconds while
 USB is configured, awake and the serial console is open. Reporting stops on
 USB disconnect or suspend and performs no extra sensor reads. The normal
@@ -137,12 +160,12 @@ timestamps before reporting values. Move the ball to produce fresh samples.
 USB sample age is measured when the firmware emits its snapshot; it excludes
 any subsequent transport delay.
 
-Only the chosen keyboard's right half needs flashing. The same image works on
-either keyboard when both use the Lemon Wireless v2 right-side configuration.
-A filename such as `cosmos-wired-right-usb-debug.uf2` distinguishes the download;
-it does not restrict the firmware to one physical keyboard. This reader is for
-USB measurements; the existing Bluetooth collector and Grafana series continue
-to describe the Bluetooth keyboard.
+Flash the named right image onto its matching keyboard. Roseblue has no keys
+at present: double-tap its physical reset button to enter the bootloader.
+Its USB collector selects serial `047B8C32401DC31D`, saves a separate SQLite
+history, and feeds the [roseblue dashboard](http://ci4.test:3000/d/roseblue/roseblue).
+Darkblue is selected by Bluetooth address `D5:B0:5B:EC:16:5D`; changing either
+firmware's name cannot cause the readers to collect from the other device.
 
 ### LED brightness and battery testing
 
@@ -213,7 +236,7 @@ Copy it to `~/.config/waybar/scripts/waybar-battery.py`, add
 
 ```json
 "custom/peamk-battery": {
-    "exec": "python3 ~/.config/waybar/scripts/waybar-battery.py",
+    "exec": "python3 ~/.config/waybar/scripts/waybar-battery.py --device darkblue --address D5:B0:5B:EC:16:5D",
     "return-type": "json",
     "interval": 5,
     "format": "{}",
@@ -244,7 +267,7 @@ settings does not directly switch the standard VIK trackball supply.
 
 To distinguish a sensor startup failure from a failure while running:
 
-1. Flash the `right-debug-<matching-board>` image on the right half.
+1. Flash the `darkblue-right-debug-<matching-board>` image on the right half.
 2. Connect it over USB and open its serial console (for example, `tio
    /dev/ttyACM0` on Linux; choose the device assigned to this keyboard).
 3. Reset with the physical switch off, then reset with it on. Keep the same

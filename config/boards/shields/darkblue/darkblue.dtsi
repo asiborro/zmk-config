@@ -44,7 +44,7 @@
         >;
   };
 
-  /* This has moved to peamk_c2r.dtsi and peamk_r2c.dtsi
+  /* This has moved to darkblue_c2r.dtsi and darkblue_r2c.dtsi
   kscan0: kscan_0 {
         compatible = "zmk,kscan-gpio-matrix";
 

@@ -1,0 +1,12 @@
+# Copyright (c) 2022 The ZMK Contributors
+# SPDX-License-Identifier: MIT
+
+config SHIELD_ROSEBLUE_LEFT
+    bool "roseblue Left"
+    default y if $(shields_list_contains,roseblue_r2c_left)
+    default y if $(shields_list_contains,roseblue_c2r_left)
+
+config SHIELD_ROSEBLUE_RIGHT
+    bool "roseblue Right"
+    default y if $(shields_list_contains,roseblue_r2c_right)
+    default y if $(shields_list_contains,roseblue_c2r_right)

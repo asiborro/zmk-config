@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Add the PeaMK scrape job/dashboard to the existing monitoring Pi over SSH."""
+"""Deploy the darkblue and roseblue jobs/dashboards to the monitoring Pi."""
 
 import argparse
 import json
@@ -20,9 +20,10 @@ import urllib.error
 import urllib.request
 
 payload = json.load(sys.stdin)
-json.loads(payload['dashboard'])
+for content in payload['dashboards'].values():
+    json.loads(content)
 config = Path('/opt/monitoring/prometheus.yml')
-dashboard = Path('/opt/monitoring/grafana/dashboards/peamk-battery.json')
+dashboard_dir = Path('/opt/monitoring/grafana/dashboards')
 original = config.read_text()
 begin = '  # BEGIN peamk-battery (managed by zmk-config/monitoring)\n'
 end = '  # END peamk-battery\n'
@@ -31,8 +32,8 @@ if begin in original and end in original:
     _, after = rest.split(end, 1)
     candidate = before + begin + payload['job'] + end + after
 else:
-    if 'job_name: peamk-battery' in original:
-        raise SystemExit('Existing unmarked peamk-battery job: review it before replacing.')
+    if any('job_name: ' + job in original for job in ('peamk-battery', 'darkblue', 'roseblue')):
+        raise SystemExit('Existing unmarked keyboard job: review it before replacing.')
     candidate = original.rstrip() + '\n' + begin + payload['job'] + end
 
 # Validate the full config with the exact running Prometheus image before writing.
@@ -77,7 +78,7 @@ if candidate != original:
             except (urllib.error.URLError, TimeoutError):
                 time.sleep(0.5)
                 continue
-            if 'job_name: peamk-battery' in active:
+            if all('job_name: ' + job in active for job in ('darkblue', 'roseblue')):
                 loaded = True
                 break
             time.sleep(0.5)
@@ -91,11 +92,16 @@ if candidate != original:
 else:
     print('Prometheus job already current')
 
-if dashboard.exists() and dashboard.read_text() != payload['dashboard']:
-    shutil.copy2(dashboard, dashboard.with_name(f'peamk-battery.before-{stamp}.json.bak'))
-dashboard.write_text(payload['dashboard'])
-dashboard.chmod(0o644)
-print(f'Dashboard installed: {dashboard}; Grafana reloads it within 30 seconds')
+for name, content in payload['dashboards'].items():
+    if name not in ('darkblue.json', 'roseblue.json'):
+        raise SystemExit('Unexpected dashboard filename')
+    # Keep the original provisioned file/UID so bookmarks and history survive.
+    dashboard = dashboard_dir / ('peamk-battery.json' if name == 'darkblue.json' else name)
+    if dashboard.exists() and dashboard.read_text() != content:
+        shutil.copy2(dashboard, dashboard.with_name(f'{name}.before-{stamp}.bak'))
+    dashboard.write_text(content)
+    dashboard.chmod(0o644)
+    print(f'Dashboard installed: {dashboard}; Grafana reloads it within 30 seconds')
 '''
 
 
@@ -105,7 +111,8 @@ def main():
     args = parser.parse_args()
     directory = Path(__file__).parent
     payload = {"job": (directory / "prometheus-job.yml").read_text(),
-               "dashboard": (directory / "peamk-battery.json").read_text()}
+               "dashboards": {name + ".json": (directory / (name + ".json")).read_text()
+                              for name in ("darkblue", "roseblue")}}
     subprocess.run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", args.host,
                     "sudo -n python3 -c " + shlex.quote(REMOTE)], input=json.dumps(payload), text=True, check=True)
 

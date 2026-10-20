@@ -1,0 +1,13 @@
+[Unit]
+Description=darkblue battery and trackball history
+
+[Service]
+# Keep the existing history database across the device rename.
+ExecStart=/usr/bin/python3 %h/.local/lib/keyboard-telemetry/battery-monitor.py serve --device darkblue --address D5:B0:5B:EC:16:5D
+Restart=on-failure
+RestartSec=15
+UMask=0077
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

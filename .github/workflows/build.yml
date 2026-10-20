@@ -25,11 +25,13 @@ jobs:
       builds: ${{ steps.matrix.outputs.builds }}
     steps:
       - uses: actions/checkout@v7.0.1
+      - name: Install matrix reader dependency
+        run: python3 -m pip install PyYAML==6.0.2
       - name: Check battery readers and monitoring
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - name: Read build.yaml
         id: matrix
-        run: echo "builds=$(yq -o=json -I=0 build.yaml)" >> "$GITHUB_OUTPUT"
+        run: echo "builds=$(python3 scripts/build-firmware.py --list | jq -c .)" >> "$GITHUB_OUTPUT"
 
   build:
     needs: matrix
@@ -42,8 +44,7 @@ jobs:
       matrix: ${{ fromJSON(needs.matrix.outputs.builds) }}
     env:
       BOARD: ${{ inputs.board || matrix.board }}
-      SHIELD: ${{ matrix.shield }}
-      SNIPPET: ${{ matrix.snippet }}
+      ARTIFACT: ${{ matrix.artifact }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -67,7 +68,7 @@ jobs:
         run: west update --fetch-opt=--filter=tree:0
 
       - name: Test PMW3610 startup recovery and passive quality cache
-        if: matrix.artifact == 'right'
+        if: matrix.artifact == 'darkblue-right'
         run: |
           python3 scripts/check-pmw3610-startup.py zmk-pmw3610-driver
           python3 scripts/check-pmw3610-clock.py zmk-pmw3610-driver
@@ -78,34 +79,14 @@ jobs:
         run: west zephyr-export
 
       - name: Build firmware
-        shell: bash
-        run: |
-          west_args=()
-          cmake_args=()
-          if [ -n "$SNIPPET" ]; then
-            west_args+=(-S "$SNIPPET")
-            cmake_args+=(-DEXTRA_CONF_FILE="${GITHUB_WORKSPACE}/config/diagnostics.conf")
-          fi
-          west build -s zmk/app -b "$BOARD" "${west_args[@]}" -- \
-            -DSHIELD="$SHIELD" \
-            -DZMK_CONFIG="${GITHUB_WORKSPACE}/config" \
-            -DZMK_EXTRA_MODULES="${GITHUB_WORKSPACE}/config" \
-            "${cmake_args[@]}"
-
-      - name: Record resolved dependency revisions
-        run: python3 scripts/freeze-manifest.py > build/manifest-frozen.yml
+        run: python3 scripts/build-firmware.py --no-update --artifact "$ARTIFACT" --board "$BOARD"
 
       - name: Upload firmware
         uses: actions/upload-artifact@v7.0.2
         with:
           name: ${{ matrix.artifact }}-${{ env.BOARD }}
           path: |
-            build/zephyr/zmk.uf2
-            build/zephyr/zephyr.dts
-            build/zephyr/.config
-            build/zephyr/zmk.map
-            build/zephyr/zmk.elf
-            build/manifest-frozen.yml
+            artifacts/${{ matrix.artifact }}-${{ env.BOARD }}/
           include-hidden-files: true
           if-no-files-found: error
           compression-level: 0

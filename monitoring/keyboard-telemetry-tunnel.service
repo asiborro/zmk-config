@@ -1,0 +1,12 @@
+[Unit]
+Description=Send darkblue and roseblue metrics to ci4.test
+After=darkblue-battery.service roseblue-trackball.service
+Wants=darkblue-battery.service roseblue-trackball.service
+
+[Service]
+ExecStart=/usr/bin/ssh -NT -o BatchMode=yes -o ConnectTimeout=10 -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -R 127.0.0.1:19108:127.0.0.1:19108 -R 127.0.0.1:19109:127.0.0.1:19109 ci4.test
+Restart=always
+RestartSec=15
+
+[Install]
+WantedBy=default.target

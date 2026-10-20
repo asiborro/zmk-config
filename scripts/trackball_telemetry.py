@@ -28,10 +28,8 @@ def decode(value):
                 last_error=error, motion=bool(flags & 4) if state == "ok" else None)
 
 
-def read_objects(objects, read_value, reader, device_name="PeaMK"):
-    device = next((path for path, interfaces in objects.items()
-                   if interfaces.get(reader.DEVICE, {}).get("Connected") and
-                   interfaces[reader.DEVICE].get("Alias", interfaces[reader.DEVICE].get("Name")) == device_name), None)
+def read_objects(objects, read_value, reader, device_name="PeaMK", address=None):
+    device = reader.select_device(objects, device_name, address)
     if device is None:
         return dict(connected=False, state="disconnected")
     for path, interfaces in objects.items():
@@ -46,12 +44,12 @@ def read_objects(objects, read_value, reader, device_name="PeaMK"):
     return dict(connected=True, state="unsupported")
 
 
-def read_bluez(device_name="PeaMK"):
+def read_bluez(device_name="darkblue", address=None):
     spec = importlib.util.spec_from_file_location("battery_reader", Path(__file__).with_name("waybar-battery.py"))
     reader = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(reader)
     objects, read_value = reader.bluez_access()
-    return read_objects(objects, read_value, reader, device_name)
+    return read_objects(objects, read_value, reader, device_name, address)
 
 
 def initialize(connection):
@@ -84,7 +82,7 @@ def latest(connection):
     return dict(row) if row else None
 
 
-def exposition(row, now, max_age=INTERVAL * 2):
+def exposition(row, now, max_age=INTERVAL * 2, transport="bluetooth"):
     age = max(0, now - row["timestamp"]) if row else None
     fresh = row is not None and age <= max_age
     state = row["state"] if fresh else "unavailable"
@@ -106,7 +104,9 @@ def exposition(row, now, max_age=INTERVAL * 2):
            fresh and state in ("ok", "stale", "no_sample", "not_ready", "error"))
     metric("supported", "One if firmware exposes diagnostics; NaN when not known.",
            False if state == "unsupported" else True if fresh and row["ready"] is not None else None)
-    metric("bluetooth_connected", "Host Bluetooth connection; NaN when unknown.", row["connected"] if fresh else None)
+    if transport not in ("bluetooth", "usb"):
+        raise ValueError("Unknown diagnostics transport")
+    metric(f"{transport}_connected", f"Host {transport} connection; NaN when unknown.", row["connected"] if fresh else None)
     metric("state_info", "Diagnostics state; stale may mean idle or stalled acquisition.", 1, extra={"state": state})
     metric("quality_available", "One for a recent successful sensor sample, including a legitimate zero SQUAL.", available)
     metric("squal", "Raw PMW3610 surface-quality register (0..255); not a percentage or distance.", row["squal"] if available else None)

@@ -1,0 +1,6 @@
+#include "../../common/lemon-leds.dtsi"
+
+/* This keyboard's left half. Right count is overridden in its own overlay. */
+&led_strip {
+    chain-length = <23>;
+};

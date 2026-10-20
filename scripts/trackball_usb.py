@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read only structured trackball diagnostics from a selected PeaMK USB console."""
+"""Read only structured trackball diagnostics from an exact USB device serial."""
 import argparse
 from array import array
 from datetime import datetime, timezone
@@ -58,12 +58,12 @@ class LiveFrames:
         return value
 
 
-def frames(fd, seconds, clock=time.monotonic):
+def frames(fd, seconds, clock=time.monotonic, stop=None):
     opened = clock()
     live = LiveFrames(opened)
     pending = b""
     discard_line = False
-    while clock() - opened < seconds:
+    while clock() - opened < seconds and (stop is None or not stop.is_set()):
         ready, _, _ = select.select([fd], [], [], min(0.5, max(0, seconds - (clock() - opened))))
         if not ready:
             continue
@@ -89,13 +89,17 @@ def frames(fd, seconds, clock=time.monotonic):
 def find_port(serial, directory=Path("/dev/serial/by-id")):
     if not re.fullmatch(r"[A-Za-z0-9]+", serial):
         raise ValueError("USB serial must contain only letters and digits")
-    port = directory / f"usb-ZMK_Project_PeaMK_{serial}-if00"
-    if not port.exists():
-        raise FileNotFoundError(f"Selected PeaMK USB console is absent: {port}")
-    return port
+    ports = [directory / f"usb-ZMK_Project_{name}_{serial}-if00"
+             for name in ("darkblue", "roseblue", "PeaMK")]
+    matches = [port for port in ports if port.exists()]
+    if not matches:
+        raise FileNotFoundError(f"USB diagnostics console absent for serial {serial}")
+    if len(matches) != 1:
+        raise ValueError(f"Multiple USB diagnostics consoles for serial {serial}")
+    return matches[0]
 
 
-def capture(port, serial, seconds):
+def capture(port, serial, seconds, stop=None):
     fd = os.open(port, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
     original = None
     controls_set = False
@@ -111,7 +115,7 @@ def capture(port, serial, seconds):
         termios.tcflush(fd, termios.TCIFLUSH)
         fcntl.ioctl(fd, termios.TIOCMBIS, array("i", [termios.TIOCM_DTR | termios.TIOCM_RTS]))
         controls_set = True
-        for value in frames(fd, seconds):
+        for value in frames(fd, seconds, stop=stop):
             yield dict(value, usb_serial=serial, received_at=datetime.now(timezone.utc).isoformat())
     finally:
         try:
@@ -119,7 +123,7 @@ def capture(port, serial, seconds):
                 fcntl.ioctl(fd, termios.TIOCMBIC, array("i", [termios.TIOCM_DTR | termios.TIOCM_RTS]))
             if original is not None:
                 termios.tcsetattr(fd, termios.TCSANOW, original)
-        except OSError:
+        except (OSError, termios.error):
             pass  # The device may have been unplugged.
         os.close(fd)
 
@@ -142,7 +146,7 @@ def main():
             print("No live USB quality frames received. The selected right half needs the USB-quality "
                   "debug build; ordinary debug logs do not contain these frames.", file=sys.stderr)
             return 2
-    except (OSError, ValueError, ConnectionError) as error:
+    except (OSError, ValueError, ConnectionError, termios.error) as error:
         print(f"USB quality reader: {error}", file=sys.stderr)
         return 1
     except KeyboardInterrupt:

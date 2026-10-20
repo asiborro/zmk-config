@@ -1,0 +1,12 @@
+[Unit]
+Description=roseblue USB trackball history
+
+[Service]
+ExecStart=/usr/bin/python3 %h/.local/lib/keyboard-telemetry/trackball_usb_monitor.py --keyboard roseblue --serial 047B8C32401DC31D
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

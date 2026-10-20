@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Log both PeaMK batteries every five minutes and export Prometheus metrics.
+"""Log both darkblue batteries every five minutes and export Prometheus metrics.
 
 New firmware supplies voltage, USB, RGB and sample age for both halves.
 Older firmware uses manual annotations and its original percentage readings.
@@ -89,11 +89,11 @@ def mark(connection, halves, changes, note="", now=None):
             connection.execute("INSERT INTO events VALUES (?, ?, ?, ?)", (now, half, json.dumps(state), note))
 
 
-def read_keyboard(device):
+def read_keyboard(device, address=None):
     spec = importlib.util.spec_from_file_location("waybar_battery", Path(__file__).with_name("waybar-battery.py"))
     reader = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(reader)
-    return reader.read_bluez(device)
+    return reader.read_bluez(device, address=address)
 
 
 def collect(connection, reader, now=None):
@@ -338,12 +338,12 @@ def serve(args):
     try:
         while not stop.is_set():
             if time.monotonic() >= next_battery:
-                rows = collect(connection, lambda: read_keyboard(args.device))
+                rows = collect(connection, lambda: read_keyboard(args.device, args.address))
                 print(json.dumps({"timestamp": rows[0]["timestamp"], "connected": rows[0]["connected"],
                                   **{row["half"]: row["level"] for row in rows}, "error": rows[0]["error"]}), flush=True)
                 next_battery = time.monotonic() + args.interval
             if time.monotonic() >= next_trackball:
-                trackball_telemetry.collect(connection, lambda: trackball_telemetry.read_bluez(args.device))
+                trackball_telemetry.collect(connection, lambda: trackball_telemetry.read_bluez(args.device, args.address))
                 next_trackball = time.monotonic() + args.trackball_interval
             # Do not backfill invented samples after suspend or a slow collection.
             stop.wait(max(0, min(next_battery, next_trackball) - time.monotonic()))
@@ -358,7 +358,8 @@ def main():
     parser.add_argument("--database", type=Path, default=DEFAULT_DATABASE)
     commands = parser.add_subparsers(dest="command", required=True)
     daemon = commands.add_parser("serve", help="Collect every five minutes and serve cached metrics")
-    daemon.add_argument("--device", default="PeaMK")
+    daemon.add_argument("--device", default="darkblue")
+    daemon.add_argument("--address", help="Exact Bluetooth address; takes precedence over the alias")
     daemon.add_argument("--interval", type=int, default=INTERVAL)
     daemon.add_argument("--trackball-interval", type=int, default=trackball_telemetry.INTERVAL)
     daemon.add_argument("--bind", default="127.0.0.1")

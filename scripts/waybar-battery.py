@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read PeaMK's two battery services through its existing BlueZ connection."""
+"""Read the split keyboard's battery services through its existing BlueZ connection."""
 
 import argparse
 import json
@@ -120,18 +120,26 @@ class ReadError(Exception):
     """A Bluetooth value is temporarily unavailable."""
 
 
-def battery_levels(objects, read_value, device_name="PeaMK", curves=None, include_legacy=True):
+def select_device(objects, device_name, address=None):
+    """Pin monitoring to a physical device, even across a firmware rename."""
+    matches = []
+    for path, interfaces in objects.items():
+        device = interfaces.get(DEVICE, {})
+        if not device.get("Connected"):
+            continue
+        selected = (str(device.get("Address", "")).upper() == address.upper()
+                    if address else device.get("Alias", device.get("Name")) == device_name)
+        if selected:
+            matches.append(path)
+    if len(matches) > 1:
+        raise ReadError("Multiple connected devices match; select a Bluetooth address")
+    return matches[0] if matches else None
+
+
+def battery_levels(objects, read_value, device_name="PeaMK", curves=None, include_legacy=True, address=None):
     """Identify sides by ZMK's descriptor, never by GATT handle order."""
     levels = {"connected": False, "left": None, "right": None, "proxy": False}
-    device_path = next(
-        (
-            path
-            for path, interfaces in objects.items()
-            if interfaces.get(DEVICE, {}).get("Connected")
-            and interfaces[DEVICE].get("Alias", interfaces[DEVICE].get("Name")) == device_name
-        ),
-        None,
-    )
+    device_path = select_device(objects, device_name, address)
     if device_path is None:
         return levels
     levels["connected"] = True
@@ -246,20 +254,21 @@ def bluez_access():
     return objects, read_value
 
 
-def read_bluez(device_name, include_legacy=True):
+def read_bluez(device_name, include_legacy=True, address=None):
     objects, read_value = bluez_access()
     curves = None
     if CURVE_PATH.exists():
         curves = json.loads(CURVE_PATH.read_text())
-    return battery_levels(objects, read_value, device_name, curves, include_legacy)
+    return battery_levels(objects, read_value, device_name, curves, include_legacy, address)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--device", default="PeaMK", help="Bluetooth device alias")
+    parser.add_argument("--device", default="darkblue", help="Display name; Bluetooth alias if no address is supplied")
+    parser.add_argument("--address", help="Exact Bluetooth address; takes precedence over the alias")
     args = parser.parse_args()
     try:
-        output = waybar_output(read_bluez(args.device, include_legacy=False), args.device)
+        output = waybar_output(read_bluez(args.device, include_legacy=False, address=args.address), args.device)
     except Exception as error:
         # Keep Waybar alive if BlueZ is restarting or the system bus is unavailable.
         print(f"Battery reader: {error}", file=sys.stderr)

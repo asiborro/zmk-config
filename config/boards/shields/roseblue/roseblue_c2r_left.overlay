@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "peamk_c2r.dtsi"
+#include "roseblue_c2r.dtsi"
 
 &bootloader_key_left {
     status = "okay";

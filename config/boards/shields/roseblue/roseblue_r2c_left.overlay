@@ -4,16 +4,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "peamk_c2r.dtsi"
+#include "roseblue_r2c.dtsi"
 
-&bootloader_key_right {
+&bootloader_key_left {
     status = "okay";
 };
 
 / {
 
-};
-
-&default_transform {
-    col-offset = <7>;
 };

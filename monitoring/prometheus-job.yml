@@ -1,8 +1,14 @@
   # Battery history: 5 minutes. Trackball diagnostics: 10 seconds.
   # Scraping only reads cached data and does not perform Bluetooth operations.
-  - job_name: peamk-battery
+  - job_name: darkblue
     scrape_interval: 15s
     scrape_timeout: 10s
     static_configs:
       - targets: ['127.0.0.1:19108']
-        labels: { instance: mini, keyboard: PeaMK }
+        labels: { instance: mini, keyboard: darkblue, transport: bluetooth }
+  - job_name: roseblue
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['127.0.0.1:19109']
+        labels: { instance: mini, keyboard: roseblue, transport: usb, usb_serial: '047B8C32401DC31D' }

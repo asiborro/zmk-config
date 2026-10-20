@@ -1,0 +1,4 @@
+/* This keyboard has 18 LEDs on the right; the shared left default is 23. */
+&led_strip {
+    chain-length = <18>;
+};
