@@ -366,6 +366,16 @@ for `darkblue-battery`. Waybar pins darkblue's Bluetooth address and preserves
 the existing widget style.
 
 Serial access is required for the user running `roseblue-trackball.service`.
+This host's exact-device rule grants the `asiborro` group access to roseblue's
+firmware console, without changing access to other serial devices or its
+bootloader. Install once before plugging in the newly flashed device:
+
+```sh
+sudo install -m 644 monitoring/70-roseblue-console.rules /etc/udev/rules.d/
+sudo udevadm control --reload-rules
+```
+
 The single SSH tunnel forwards both loopback ports; other Pi monitoring jobs
 are preserved. Adjust the hardware IDs in the service files when installing
-this repository for different physical devices.
+this repository for different physical devices, and adjust the group and serial
+in the udev rule if using a different user/device.
