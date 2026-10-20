@@ -357,6 +357,13 @@ plots against darkblue. It does not invent a left half or battery measurements
 for the USB-only collection. The firmware driver, CPI, polling and motion
 transform initially match; USB logging and the device names differ.
 
+Roseblue opens the last 15 minutes so short calibration sessions are visible.
+Its **Last captured SQUAL/shutter** cards retain the most recent valid value
+within 24 hours, including while idle or disconnected. The adjacent sample age,
+sensor status and USB/collection indicators distinguish historical values from
+current readings. NaNs are excluded before this historical lookup; the raw
+metrics and graphs still contain gaps when no fresh sample is available.
+
 The firmware's existing `PEAMK_*` protocol identifiers, metric prefixes,
 darkblue's historical database path and original Grafana UID are retained for
 compatibility. Display names, service names and current scrape jobs use the new
