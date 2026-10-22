@@ -116,6 +116,21 @@ python3 scripts/check-pmw3610-quality.py zmk-pmw3610-driver
 
 ## Left and right battery levels
 
+### Active power on darkblue
+
+Darkblue's right central uses **+4 dBm** Bluetooth transmit power; its left
+peripheral and roseblue retain **+8 dBm**. Nordic specifies 9.6 mA versus
+14.8 mA during transmission at 3 V with DC/DC enabled
+([nRF52840 radio specification](https://docs.nordicsemi.com/r/bundle/ps_nrf52840/page/radio.html)).
+Those figures describe the radio's transmit periods, not the whole keyboard's
+average draw or expected battery-life improvement. The lower setting reduces
+wireless link margin and needs testing with both the host and left half.
+
+This change preserves the 125 Hz sensor setting, battery reporting, passive
+SQUAL telemetry and existing idle/sleep timers. Only the right needs flashing.
+The normal `darkblue-right` image has USB logging disabled; use it for battery
+comparisons. Runtime improvement has not yet been measured on hardware.
+
 ### Trackball optical quality
 
 The right firmware exposes PMW3610 **SQUAL**, shutter, sample age, startup status
