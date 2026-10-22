@@ -116,20 +116,17 @@ python3 scripts/check-pmw3610-quality.py zmk-pmw3610-driver
 
 ## Left and right battery levels
 
-### Active power on darkblue
+### Trackball and Bluetooth power
 
-Darkblue's right central uses **+4 dBm** Bluetooth transmit power; its left
-peripheral and roseblue retain **+8 dBm**. Nordic specifies 9.6 mA versus
-14.8 mA during transmission at 3 V with DC/DC enabled
-([nRF52840 radio specification](https://docs.nordicsemi.com/r/bundle/ps_nrf52840/page/radio.html)).
-Those figures describe the radio's transmit periods, not the whole keyboard's
-average draw or expected battery-life improvement. The lower setting reduces
-wireless link margin and needs testing with both the host and left half.
+Darkblue and roseblue use **+8 dBm** Bluetooth transmit power on both halves,
+on battery and USB power, to maximize wireless link margin. This setting does
+not change the trackball's supply voltage. Its effect on battery-powered
+pointer smoothness and overall runtime still needs measurement on hardware.
 
 Battery reporting, passive SQUAL telemetry and existing idle/sleep timers
-remain enabled. Only the right needs flashing.
+remain enabled.
 The normal `darkblue-right` image has USB logging disabled; use it for battery
-comparisons. Runtime improvement has not yet been measured on hardware.
+comparisons.
 
 Both darkblue and roseblue use **250 Hz** trackball updates (nominally every
 4 ms) to compare pointer smoothness with the previous 125 Hz setting (8 ms).
