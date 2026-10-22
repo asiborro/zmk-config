@@ -126,10 +126,17 @@ Those figures describe the radio's transmit periods, not the whole keyboard's
 average draw or expected battery-life improvement. The lower setting reduces
 wireless link margin and needs testing with both the host and left half.
 
-This change preserves the 125 Hz sensor setting, battery reporting, passive
-SQUAL telemetry and existing idle/sleep timers. Only the right needs flashing.
+Battery reporting, passive SQUAL telemetry and existing idle/sleep timers
+remain enabled. Only the right needs flashing.
 The normal `darkblue-right` image has USB logging disabled; use it for battery
 comparisons. Runtime improvement has not yet been measured on hardware.
+
+Both darkblue and roseblue use **250 Hz** trackball updates (nominally every
+4 ms) to compare pointer smoothness with the previous 125 Hz setting (8 ms).
+All their right images use this setting, including builds with USB logging.
+Only the right halves have trackballs and need flashing for this change.
+Bluetooth delivery timing still depends on the host connection. The effect
+on smoothness and battery consumption needs testing on hardware.
 
 ### Trackball optical quality
 
