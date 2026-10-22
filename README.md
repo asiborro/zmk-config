@@ -132,6 +132,14 @@ Both darkblue and roseblue use **250 Hz** trackball updates (nominally every
 4 ms) to compare pointer smoothness with the previous 125 Hz setting (8 ms).
 All their right images use this setting, including builds with USB logging.
 Only the right halves have trackballs and need flashing for this change.
+
+Both keyboards use **600 CPI with 100% (1:1) movement scaling**. This gives
+the same nominal pointer speed as 800 CPI with 75% scaling, before the host's
+pointer settings. Scroll-layer scaling is **1/12**, preserving the previous
+nominal scroll speed at 800 CPI with 1/16 scaling. Native sensor counts and
+software-scaled counts can differ in individual reports; equal nominal speed
+does not guarantee identical feel or improved smoothness.
+
 Both right images request a **7.5 ms Bluetooth connection interval** by
 setting the preferred minimum and maximum to 6 (in 1.25 ms units), replacing
 the previous 7.5–15 ms range. This targets report batching during fast movement;
