@@ -135,8 +135,13 @@ Both darkblue and roseblue use **250 Hz** trackball updates (nominally every
 4 ms) to compare pointer smoothness with the previous 125 Hz setting (8 ms).
 All their right images use this setting, including builds with USB logging.
 Only the right halves have trackballs and need flashing for this change.
-Bluetooth delivery timing still depends on the host connection. The effect
-on smoothness and battery consumption needs testing on hardware.
+Both right images request a **7.5 ms Bluetooth connection interval** by
+setting the preferred minimum and maximum to 6 (in 1.25 ms units), replacing
+the previous 7.5–15 ms range. This targets report batching during fast movement;
+the host decides the actual interval, which must be checked after reconnecting.
+Multiple sensor reports can still arrive in one Bluetooth event. USB HID keeps
+its 1 ms polling interval. More frequent Bluetooth events may increase power
+consumption; the effects on wireless smoothness and runtime need measurement.
 
 ### Trackball optical quality
 
