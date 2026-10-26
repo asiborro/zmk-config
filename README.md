@@ -128,8 +128,8 @@ remain enabled.
 The normal `darkblue-right` image has USB logging disabled; use it for battery
 comparisons.
 
-Both darkblue and roseblue use **250 Hz** trackball updates (nominally every
-4 ms) to compare pointer smoothness with the previous 125 Hz setting (8 ms).
+Both darkblue and roseblue use **125 Hz** trackball updates (nominally every
+8 ms).
 All their right images use this setting, including builds with USB logging.
 Only the right halves have trackballs and need flashing for this change.
 
