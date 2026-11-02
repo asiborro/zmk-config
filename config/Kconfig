@@ -11,23 +11,23 @@ config ZMK_BOOT_MAGIC_KEY_TIMEOUT_MS
     int "Milliseconds to wait for a boot magic key at startup"
     default 500
 
-config PEAMK_BATTERY_TELEMETRY
-    bool "PeaMK supply voltage and power-source telemetry"
+config KEYBOARD_BATTERY_TELEMETRY
+    bool "Keyboard supply voltage and power-source telemetry"
     depends on ZMK_BLE && ZMK_BATTERY && SOC_NRF52840_QIAA
     help
       Expose sampled VDDH voltage, inferred USB power, RGB state and sample age.
       On the central, relay one split peripheral's telemetry as well.
 
-config PEAMK_TRACKBALL_TELEMETRY
-    bool "PeaMK passive PMW3610 quality diagnostics"
-    depends on PEAMK_BATTERY_TELEMETRY && PMW3610 && ZMK_SPLIT_ROLE_CENTRAL
+config KEYBOARD_TRACKBALL_TELEMETRY
+    bool "Keyboard passive PMW3610 quality diagnostics"
+    depends on KEYBOARD_BATTERY_TELEMETRY && PMW3610 && ZMK_SPLIT_ROLE_CENTRAL
     help
       Cache SQUAL, shutter, startup status and SPI read errors from existing
       driver operations. Bluetooth reads do not perform sensor I/O or wake it.
 
-config PEAMK_TRACKBALL_USB_TELEMETRY
-    bool "PeaMK trackball diagnostics on the USB debug console"
-    depends on PEAMK_TRACKBALL_TELEMETRY && ZMK_USB_LOGGING && UART_LINE_CTRL && LOG
+config KEYBOARD_TRACKBALL_USB_TELEMETRY
+    bool "Keyboard trackball diagnostics on the USB debug console"
+    depends on KEYBOARD_TRACKBALL_TELEMETRY && ZMK_USB_LOGGING && UART_LINE_CTRL && LOG
     help
       Log the cached quality packet every two seconds while USB is configured,
       awake and its serial console is open. No extra sensor reads are made.

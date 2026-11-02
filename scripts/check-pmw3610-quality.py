@@ -46,34 +46,34 @@ static uint32_t u32(const uint8_t *p) { return p[0] | p[1]<<8 | p[2]<<16 | (uint
 static uint16_t u16(const uint8_t *p) { return p[0] | p[1]<<8; }
 int main(void) {
     uint8_t p[20], before[20];
-    peamk_trackball_packet(p);
+    keyboard_trackball_packet(p);
     assert(p[0]==1 && p[1]==0 && u16(p+8)==65535 && u32(p+10)==0);
     pmw3610_diagnostics_init(NULL, 2, 1, -EIO, false);
-    peamk_trackball_packet(p);
+    keyboard_trackball_packet(p);
     assert((int16_t)u16(p+6)==-EIO && p[18]==2 && p[3]==1 && !(p[1]&2));
     pmw3610_diagnostics_init(NULL, 4, 2, 0, true);
-    peamk_trackball_packet(p);
+    keyboard_trackball_packet(p);
     assert(p[1]==2 && p[3]==2 && p[18]==4 && u16(p+6)==0);
     uint8_t burst[7] = {0x80, 42, 1, 0, 0, 0xff, 0xff};
     test_now=1000;
     pmw3610_diagnostics_burst(NULL, burst, 0);
-    peamk_trackball_packet(p);
+    keyboard_trackball_packet(p);
     assert(p[1]==7 && p[2]==0 && u16(p+4)==511 && u32(p+10)==1 && u16(p+8)==0);
     memcpy(before,p,20);
-    peamk_trackball_packet(p);
+    keyboard_trackball_packet(p);
     assert(memcmp(before,p,20)==0); /* A Bluetooth read cannot consume or renew a sample. */
     test_now=31000;
-    peamk_trackball_packet(p);
+    keyboard_trackball_packet(p);
     assert(u16(p+8)==30 && u32(p+10)==1);
     test_now=70001000;
-    peamk_trackball_packet(p);
+    keyboard_trackball_packet(p);
     assert(u16(p+8)==65535);
     pmw3610_diagnostics_burst(NULL, NULL, -EIO); /* Do not inspect a failed SPI buffer. */
-    peamk_trackball_packet(p);
+    keyboard_trackball_packet(p);
     assert((int16_t)u16(p+6)==-EIO && u32(p+14)==1 && u32(p+10)==1);
     burst[0]=0; burst[4]=81; burst[5]=0; burst[6]=45;
     pmw3610_diagnostics_burst(NULL, burst, 0);
-    peamk_trackball_packet(p);
+    keyboard_trackball_packet(p);
     assert(p[1]==3 && p[2]==81 && u16(p+4)==45 && u16(p+6)==0);
     assert(u32(p+14)==1 && u32(p+10)==2 && u16(p+8)==0 && lock_depth==0);
     for (unsigned i=0;i<sizeof(p);i++) printf("%02x",p[i]);

@@ -156,7 +156,7 @@ bursts; reading diagnostics does not perform sensor I/O or reset the idle timer.
 
 The monitor stores these diagnostics every **10 seconds**, independently of
 five-minute battery history. Prometheus scrapes cached metrics every 15 seconds.
-The [battery dashboard](http://ci4.test:3000/d/peamk-battery/darkblue) includes
+The [battery dashboard](http://ci4.test:3000/d/darkblue-battery/darkblue) includes
 trackball panels below the battery panels. Move the ball to get new samples;
 values older than 30 seconds are unavailable rather than reported as zero.
 
@@ -264,10 +264,10 @@ by the order of Bluetooth services. Missing readings display `--`.
 It requires Python 3 and PyGObject/Gio and never pairs or connects either half.
 
 Copy it to `~/.config/waybar/scripts/waybar-battery.py`, add
-`custom/peamk-battery` to Waybar's `modules-right`, and add this module:
+`custom/darkblue-battery` to Waybar's `modules-right`, and add this module:
 
 ```json
-"custom/peamk-battery": {
+"custom/darkblue-battery": {
     "exec": "python3 ~/.config/waybar/scripts/waybar-battery.py --device darkblue --address D5:B0:5B:EC:16:5D",
     "return-type": "json",
     "interval": 5,

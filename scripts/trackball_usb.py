@@ -16,7 +16,7 @@ import time
 from trackball_telemetry import decode
 
 ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
-FRAME = re.compile(r"\bPEAMK_TB1 ([0-9]{1,10}) ([0-9a-fA-F]{40})$")
+FRAME = re.compile(r"\bKEYBOARD_TB1 ([0-9]{1,10}) ([0-9a-fA-F]{40})$")
 
 
 def parse_line(line):
@@ -90,7 +90,7 @@ def find_port(serial, directory=Path("/dev/serial/by-id")):
     if not re.fullmatch(r"[A-Za-z0-9]+", serial):
         raise ValueError("USB serial must contain only letters and digits")
     ports = [directory / f"usb-ZMK_Project_{name}_{serial}-if00"
-             for name in ("darkblue", "roseblue", "PeaMK")]
+             for name in ("darkblue", "roseblue")]
     matches = [port for port in ports if port.exists()]
     if not matches:
         raise FileNotFoundError(f"USB diagnostics console absent for serial {serial}")

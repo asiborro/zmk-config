@@ -11,7 +11,7 @@
 #include <zmk/activity.h>
 #include <zmk/rgb_underglow.h>
 #include <zmk/workqueue.h>
-#if IS_ENABLED(CONFIG_PEAMK_TRACKBALL_TELEMETRY)
+#if IS_ENABLED(CONFIG_KEYBOARD_TRACKBALL_TELEMETRY)
 #include "trackball_telemetry.h"
 #endif
 
@@ -30,7 +30,7 @@ enum power_source { POWER_UNKNOWN, POWER_BATTERY, POWER_USB };
 
 static struct bt_uuid_128 service_uuid = BT_UUID_INIT_128(TELEMETRY_UUID(0));
 static struct bt_uuid_128 local_uuid = BT_UUID_INIT_128(TELEMETRY_UUID(1));
-#if IS_ENABLED(CONFIG_PEAMK_TRACKBALL_TELEMETRY)
+#if IS_ENABLED(CONFIG_KEYBOARD_TRACKBALL_TELEMETRY)
 static struct bt_uuid_128 trackball_uuid = BT_UUID_INIT_128(TELEMETRY_UUID(3));
 #endif
 #if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
@@ -146,7 +146,7 @@ K_WORK_DEFINE(sample_work, sample_work_handler);
 
 #if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
 BUILD_ASSERT(CONFIG_ZMK_SPLIT_BLE_CENTRAL_PERIPHERALS == 1,
-             "PeaMK telemetry supports exactly one split peripheral");
+             "Keyboard telemetry supports exactly one split peripheral");
 static uint8_t peer_packet_cache[PACKET_SIZE];
 static int64_t peer_received_at;
 static bool peer_connected;
@@ -241,7 +241,7 @@ static void connected(struct bt_conn *conn, uint8_t err) {
 static void disconnected(struct bt_conn *conn, uint8_t reason) {
   peer_connection_changed(conn, false);
 }
-BT_CONN_CB_DEFINE(peamk_telemetry_connections) = {
+BT_CONN_CB_DEFINE(keyboard_telemetry_connections) = {
     .connected = connected,
     .disconnected = disconnected,
 };
@@ -283,11 +283,11 @@ static ssize_t read_peer(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 }
 #endif
 
-#if IS_ENABLED(CONFIG_PEAMK_TRACKBALL_TELEMETRY)
+#if IS_ENABLED(CONFIG_KEYBOARD_TRACKBALL_TELEMETRY)
 static ssize_t read_trackball(struct bt_conn *conn, const struct bt_gatt_attr *attr,
                              void *buf, uint16_t len, uint16_t offset) {
-  uint8_t packet[PEAMK_TRACKBALL_PACKET_SIZE];
-  peamk_trackball_packet(packet);
+  uint8_t packet[KEYBOARD_TRACKBALL_PACKET_SIZE];
+  keyboard_trackball_packet(packet);
   return bt_gatt_attr_read(conn, attr, buf, len, offset, packet, sizeof(packet));
 }
 #endif
@@ -295,14 +295,14 @@ static ssize_t read_trackball(struct bt_conn *conn, const struct bt_gatt_attr *a
 /* Zephyr sorts static services by name. Append after the existing HID, BAS,
  * DIS and split services so their attribute handles remain unchanged. */
 BT_GATT_SERVICE_DEFINE(
-    zz_peamk_telemetry, BT_GATT_PRIMARY_SERVICE(&service_uuid),
+    zz_keyboard_telemetry, BT_GATT_PRIMARY_SERVICE(&service_uuid),
     BT_GATT_CHARACTERISTIC(&local_uuid.uuid, BT_GATT_CHRC_READ,
                            BT_GATT_PERM_READ_ENCRYPT, read_local, NULL, NULL),
 #if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
     BT_GATT_CHARACTERISTIC(&peer_uuid.uuid, BT_GATT_CHRC_READ,
                            BT_GATT_PERM_READ_ENCRYPT, read_peer, NULL, NULL),
 #endif
-#if IS_ENABLED(CONFIG_PEAMK_TRACKBALL_TELEMETRY)
+#if IS_ENABLED(CONFIG_KEYBOARD_TRACKBALL_TELEMETRY)
     /* Append only: keep all existing HID and battery handles unchanged. */
     BT_GATT_CHARACTERISTIC(&trackball_uuid.uuid, BT_GATT_CHRC_READ,
                            BT_GATT_PERM_READ_ENCRYPT, read_trackball, NULL, NULL),

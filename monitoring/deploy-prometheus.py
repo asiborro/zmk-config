@@ -25,21 +25,21 @@ for content in payload['dashboards'].values():
 config = Path('/opt/monitoring/prometheus.yml')
 dashboard_dir = Path('/opt/monitoring/grafana/dashboards')
 original = config.read_text()
-begin = '  # BEGIN peamk-battery (managed by zmk-config/monitoring)\n'
-end = '  # END peamk-battery\n'
+begin = '  # BEGIN keyboard-telemetry (managed by zmk-config/monitoring)\n'
+end = '  # END keyboard-telemetry\n'
 if begin in original and end in original:
     before, rest = original.split(begin, 1)
     _, after = rest.split(end, 1)
     candidate = before + begin + payload['job'] + end + after
 else:
-    if any('job_name: ' + job in original for job in ('peamk-battery', 'darkblue', 'roseblue')):
+    if any('job_name: ' + job in original for job in ('darkblue', 'roseblue')):
         raise SystemExit('Existing unmarked keyboard job: review it before replacing.')
     candidate = original.rstrip() + '\n' + begin + payload['job'] + end
 
 # Validate the full config with the exact running Prometheus image before writing.
 image = subprocess.check_output(['docker', 'inspect', 'monitoring-prometheus-1',
                                  '--format', '{{.Image}}'], text=True).strip()
-with tempfile.TemporaryDirectory(prefix='peamk-prometheus-') as directory:
+with tempfile.TemporaryDirectory(prefix='keyboard-prometheus-') as directory:
     staged = Path(directory) / 'prometheus.yml'
     staged.write_text(candidate)
     staged.chmod(0o644)
@@ -63,7 +63,7 @@ def activate_config(expected):
 if candidate != original:
     if config.read_text() != original:
         raise SystemExit('Prometheus configuration changed concurrently; run again.')
-    backup = config.with_name(f'prometheus.yml.before-peamk-{stamp}')
+    backup = config.with_name(f'prometheus.yml.before-keyboard-{stamp}')
     shutil.copy2(config, backup)
     # Preserve the inode: this individual file is bind-mounted into the container.
     config.write_text(candidate)
@@ -95,8 +95,7 @@ else:
 for name, content in payload['dashboards'].items():
     if name not in ('darkblue.json', 'roseblue.json'):
         raise SystemExit('Unexpected dashboard filename')
-    # Keep the original provisioned file/UID so bookmarks and history survive.
-    dashboard = dashboard_dir / ('peamk-battery.json' if name == 'darkblue.json' else name)
+    dashboard = dashboard_dir / name
     if dashboard.exists() and dashboard.read_text() != content:
         shutil.copy2(dashboard, dashboard.with_name(f'{name}.before-{stamp}.bak'))
     dashboard.write_text(content)

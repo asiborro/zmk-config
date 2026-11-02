@@ -33,8 +33,8 @@ class BatteryMonitorTest(unittest.TestCase):
         rows = self.collect(right=100)
         self.assertEqual([row["eligible"] for row in rows], [1, 0])
         metrics = monitor.exposition(rows, 1000)
-        self.assertIn('peamk_battery_reported_ratio{half="right"} 1.0', metrics)
-        self.assertNotIn('peamk_battery_discharge_ratio{half="right"', metrics)
+        self.assertIn('keyboard_battery_reported_ratio{half="right"} 1.0', metrics)
+        self.assertNotIn('keyboard_battery_discharge_ratio{half="right"', metrics)
         monitor.mark(self.db, ("right",), {"power": "battery"}, now=0)
         self.assertEqual(self.collect(now=1300, right=100)[1]["eligible"], 0)
 
@@ -64,11 +64,11 @@ class BatteryMonitorTest(unittest.TestCase):
     def test_stale_collections_remove_battery_metrics(self):
         self.annotate()
         metrics = monitor.exposition(self.collect(), 1700)
-        self.assertNotIn('peamk_battery_reported_ratio{', metrics)
-        self.assertNotIn('peamk_battery_discharge_ratio{', metrics)
-        self.assertIn("peamk_collection_success 0", metrics)
-        self.assertIn("peamk_bluetooth_connected NaN", metrics)
-        self.assertIn("peamk_collection_success 0", monitor.exposition([], 1700))
+        self.assertNotIn('keyboard_battery_reported_ratio{', metrics)
+        self.assertNotIn('keyboard_battery_discharge_ratio{', metrics)
+        self.assertIn("keyboard_collection_success 0", metrics)
+        self.assertIn("keyboard_bluetooth_connected NaN", metrics)
+        self.assertIn("keyboard_collection_success 0", monitor.exposition([], 1700))
 
     def test_conditions_do_not_change_retroactively(self):
         self.annotate()

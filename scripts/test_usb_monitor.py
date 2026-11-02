@@ -49,11 +49,11 @@ class UsbMonitorTest(unittest.TestCase):
                 self.assertEqual(db.execute("SELECT count(*) FROM trackball_samples").fetchone()[0], 2)
                 self.assertEqual(db.execute("SELECT firmware_uptime_ms FROM usb_frames ORDER BY timestamp DESC").fetchone()[0], 1000)
                 text = monitor.metrics(db, "SECOND", "roseblue", 10, now=110)
-                self.assertIn('peamk_trackball_usb_connected{half="right"} 1', text)
+                self.assertIn('keyboard_trackball_usb_connected{half="right"} 1', text)
                 self.assertIn('usb_serial="SECOND"', text)
                 self.assertNotIn("bluetooth_connected", text)
-                self.assertIn('peamk_trackball_squal{half="right"} 0', text)
-                self.assertIn('peamk_trackball_squal{half="right"} NaN',
+                self.assertIn('keyboard_trackball_squal{half="right"} 0', text)
+                self.assertIn('keyboard_trackball_squal{half="right"} NaN',
                               monitor.metrics(db, "SECOND", "roseblue", 10, now=131))
                 with self.assertRaisesRegex(ValueError, "another USB device"):
                     monitor.database(path, "FIRST", "darkblue")

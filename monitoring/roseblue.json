@@ -82,7 +82,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "last_over_time((peamk_trackball_squal{job=\"roseblue\",half=\"right\"} >= 0)[24h:15s])",
+          "expr": "last_over_time((keyboard_trackball_squal{job=\"roseblue\",half=\"right\"} >= 0)[24h:15s])",
           "legendFormat": "roseblue",
           "instant": true,
           "range": false,
@@ -138,7 +138,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "last_over_time((peamk_trackball_shutter_cycles{job=\"roseblue\",half=\"right\"} >= 0)[24h:15s])",
+          "expr": "last_over_time((keyboard_trackball_shutter_cycles{job=\"roseblue\",half=\"right\"} >= 0)[24h:15s])",
           "legendFormat": "roseblue",
           "instant": true,
           "range": false,
@@ -216,7 +216,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_trackball_sample_age_seconds{job=\"roseblue\",half=\"right\"}",
+          "expr": "keyboard_trackball_sample_age_seconds{job=\"roseblue\",half=\"right\"}",
           "legendFormat": "roseblue",
           "instant": true,
           "range": false,
@@ -319,7 +319,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "max((peamk_trackball_state_info{job=\"roseblue\",state=\"ok\"} * 1) or (peamk_trackball_state_info{job=\"roseblue\",state=\"stale\"} * 2) or (peamk_trackball_state_info{job=\"roseblue\",state=\"no_sample\"} * 3) or (peamk_trackball_state_info{job=\"roseblue\",state=\"not_ready\"} * 4) or (peamk_trackball_state_info{job=\"roseblue\",state=\"error\"} * 5) or (peamk_trackball_state_info{job=\"roseblue\",state=\"no_console\"} * 6) or (peamk_trackball_state_info{job=\"roseblue\",state=\"waiting\"} * 7) or (peamk_trackball_state_info{job=\"roseblue\",state=\"disconnected\"} * 8) or (peamk_trackball_state_info{job=\"roseblue\",state=\"unavailable\"} * 9) or (peamk_trackball_state_info{job=\"roseblue\",state=\"unsupported\"} * 10))",
+          "expr": "max((keyboard_trackball_state_info{job=\"roseblue\",state=\"ok\"} * 1) or (keyboard_trackball_state_info{job=\"roseblue\",state=\"stale\"} * 2) or (keyboard_trackball_state_info{job=\"roseblue\",state=\"no_sample\"} * 3) or (keyboard_trackball_state_info{job=\"roseblue\",state=\"not_ready\"} * 4) or (keyboard_trackball_state_info{job=\"roseblue\",state=\"error\"} * 5) or (keyboard_trackball_state_info{job=\"roseblue\",state=\"no_console\"} * 6) or (keyboard_trackball_state_info{job=\"roseblue\",state=\"waiting\"} * 7) or (keyboard_trackball_state_info{job=\"roseblue\",state=\"disconnected\"} * 8) or (keyboard_trackball_state_info{job=\"roseblue\",state=\"unavailable\"} * 9) or (keyboard_trackball_state_info{job=\"roseblue\",state=\"unsupported\"} * 10))",
           "legendFormat": "Status",
           "instant": true,
           "range": false,
@@ -409,7 +409,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_trackball_usb_connected{job=\"roseblue\"}",
+          "expr": "keyboard_trackball_usb_connected{job=\"roseblue\"}",
           "legendFormat": "USB",
           "range": false,
           "datasource": {
@@ -499,7 +499,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_trackball_collection_success{job=\"roseblue\"}",
+          "expr": "keyboard_trackball_collection_success{job=\"roseblue\"}",
           "legendFormat": "Read success",
           "range": false,
           "datasource": {
@@ -655,7 +655,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_trackball_squal{job=\"roseblue\",half=\"right\"}",
+          "expr": "keyboard_trackball_squal{job=\"roseblue\",half=\"right\"}",
           "legendFormat": "roseblue",
           "instant": false,
           "range": true,
@@ -722,7 +722,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_trackball_shutter_cycles{job=\"roseblue\",half=\"right\"}",
+          "expr": "keyboard_trackball_shutter_cycles{job=\"roseblue\",half=\"right\"}",
           "legendFormat": "roseblue",
           "instant": false,
           "range": true,
@@ -788,7 +788,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_trackball_sample_age_seconds{job=\"roseblue\",half=\"right\"}",
+          "expr": "keyboard_trackball_sample_age_seconds{job=\"roseblue\",half=\"right\"}",
           "legendFormat": "roseblue",
           "instant": false,
           "range": true,
@@ -854,7 +854,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_trackball_read_errors_total{job=\"roseblue\",half=\"right\"}",
+          "expr": "keyboard_trackball_read_errors_total{job=\"roseblue\",half=\"right\"}",
           "legendFormat": "roseblue",
           "instant": false,
           "range": true,
@@ -921,7 +921,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_trackball_squal{job=~\"darkblue|peamk-battery\",half=\"right\"}",
+          "expr": "keyboard_trackball_squal{job=\"darkblue\",half=\"right\"}",
           "legendFormat": "darkblue \u00b7 Bluetooth",
           "instant": false,
           "range": true,
@@ -932,7 +932,7 @@
         },
         {
           "refId": "B",
-          "expr": "peamk_trackball_squal{job=\"roseblue\",half=\"right\"}",
+          "expr": "keyboard_trackball_squal{job=\"roseblue\",half=\"right\"}",
           "legendFormat": "roseblue \u00b7 USB",
           "instant": false,
           "range": true,
@@ -999,7 +999,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "peamk_trackball_shutter_cycles{job=~\"darkblue|peamk-battery\",half=\"right\"}",
+          "expr": "keyboard_trackball_shutter_cycles{job=\"darkblue\",half=\"right\"}",
           "legendFormat": "darkblue \u00b7 Bluetooth",
           "instant": false,
           "range": true,
@@ -1010,7 +1010,7 @@
         },
         {
           "refId": "B",
-          "expr": "peamk_trackball_shutter_cycles{job=\"roseblue\",half=\"right\"}",
+          "expr": "keyboard_trackball_shutter_cycles{job=\"roseblue\",half=\"right\"}",
           "legendFormat": "roseblue \u00b7 USB",
           "instant": false,
           "range": true,
@@ -1027,7 +1027,7 @@
   "links": [
     {
       "title": "darkblue \u00b7 split keyboard",
-      "url": "/d/peamk-battery/darkblue",
+      "url": "/d/darkblue-battery/darkblue",
       "type": "link",
       "targetBlank": false
     }

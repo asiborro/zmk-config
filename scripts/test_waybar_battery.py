@@ -14,7 +14,7 @@ class BatteryReadingsTest(unittest.TestCase):
         self.right = self.device + "/service0040/char0041"
         self.desc = self.left + "/desc0005"
         self.objects = {
-            self.device: {battery.DEVICE: {"Alias": "PeaMK", "Connected": True}},
+            self.device: {battery.DEVICE: {"Alias": "darkblue", "Connected": True}},
             self.left: {battery.CHARACTERISTIC: {
                 "UUID": battery.BATTERY_LEVEL, "Service": self.left.rsplit("/", 1)[0]}},
             self.right: {battery.CHARACTERISTIC: {
@@ -40,7 +40,7 @@ class BatteryReadingsTest(unittest.TestCase):
     def test_old_firmware_leaves_left_unknown(self):
         del self.objects[self.left]
         levels = battery.battery_levels(self.objects, self.read)
-        self.assertEqual(battery.waybar_output(levels)["text"], "PeaMK L -- R 49%")
+        self.assertEqual(battery.waybar_output(levels)["text"], "darkblue L -- R 49%")
 
     def test_unreadable_descriptor_does_not_replace_right_with_left(self):
         self.values[self.desc] = battery.ReadError("Disconnected during discovery")
@@ -52,13 +52,13 @@ class BatteryReadingsTest(unittest.TestCase):
         self.values[self.left] = [255]
         self.values[self.right] = []
         levels = battery.battery_levels(self.objects, self.read)
-        self.assertEqual(battery.waybar_output(levels)["text"], "PeaMK L -- R --")
+        self.assertEqual(battery.waybar_output(levels)["text"], "darkblue L -- R --")
 
     def test_valid_empty_and_full_batteries_are_preserved(self):
         self.values[self.left] = [0]
         self.values[self.right] = [100]
         levels = battery.battery_levels(self.objects, self.read)
-        self.assertEqual(battery.waybar_output(levels)["text"], "PeaMK L 0% R 100%")
+        self.assertEqual(battery.waybar_output(levels)["text"], "darkblue L 0% R 100%")
 
     def test_other_peripheral_is_not_mislabeled_as_left(self):
         self.values[self.desc] = list(b"Peripheral 1")
@@ -69,12 +69,12 @@ class BatteryReadingsTest(unittest.TestCase):
     def test_disconnected_keyboard_does_not_read_stale_values(self):
         self.objects[self.device][battery.DEVICE]["Connected"] = False
         levels = battery.battery_levels(self.objects, lambda *_: self.fail("Unexpected read"))
-        self.assertEqual(battery.waybar_output(levels)["text"], "PeaMK L -- R --")
+        self.assertEqual(battery.waybar_output(levels)["text"], "darkblue L -- R --")
 
     def test_exact_address_survives_rename_and_never_reads_secondary(self):
         self.objects[self.device][battery.DEVICE].update(Address="AA:BB:CC:DD:EE:01")
         self.objects["/second"] = {battery.DEVICE: {
-            "Connected": True, "Alias": "PeaMK", "Address": "AA:BB:CC:DD:EE:02"}}
+            "Connected": True, "Alias": "darkblue", "Address": "AA:BB:CC:DD:EE:02"}}
         with self.assertRaises(battery.ReadError):
             battery.battery_levels(self.objects, self.read)
         result = battery.battery_levels(self.objects, self.read, "darkblue", address="aa:bb:cc:dd:ee:01")
@@ -84,7 +84,7 @@ class BatteryReadingsTest(unittest.TestCase):
         self.assertEqual(result["right"], 49)
         self.objects[self.device][battery.DEVICE]["Connected"] = False
         result = battery.battery_levels(self.objects, lambda *_: self.fail("Read the other keyboard"),
-                                        "PeaMK", address="AA:BB:CC:DD:EE:01")
+                                        "darkblue", address="AA:BB:CC:DD:EE:01")
         self.assertFalse(result["connected"])
 
 

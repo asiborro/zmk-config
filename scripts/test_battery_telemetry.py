@@ -31,7 +31,7 @@ class TelemetryTest(unittest.TestCase):
         self.assertIsNone(data["estimate"])
         levels = dict(connected=True, left=100, right=100, telemetry=dict(left=data, right=data))
         output = reader.waybar_output(levels)
-        self.assertEqual(output["text"], "PeaMK L USB R USB")
+        self.assertEqual(output["text"], "darkblue L USB R USB")
         self.assertIn("completion unknown", output["tooltip"])
 
     def test_stale_or_disconnected_peer_cannot_supply_charge_or_usb_state(self):
@@ -92,16 +92,16 @@ class TelemetryTest(unittest.TestCase):
         device = "/org/bluez/hci0/dev_test"
         service = device + "/service0090"
         local, peer = service + "/char0092", service + "/char0094"
-        objects = {device: {reader.DEVICE: {"Alias": "PeaMK", "Connected": True}},
+        objects = {device: {reader.DEVICE: {"Alias": "darkblue", "Connected": True}},
                    service: {reader.SERVICE: {"UUID": reader.TELEMETRY_SERVICE}},
                    local: {reader.CHARACTERISTIC: {"Service": service, "UUID": reader.TELEMETRY_LOCAL}},
                    peer: {reader.CHARACTERISTIC: {"Service": service, "UUID": reader.TELEMETRY_PEER}}}
         values = {local: packet(usb=True, mv=4950), peer: packet(mv=3900)}
         levels = reader.battery_levels(objects, lambda path, _: values[path])
-        self.assertEqual(reader.waybar_output(levels)["text"], "PeaMK L 60% R USB")
+        self.assertEqual(reader.waybar_output(levels)["text"], "darkblue L 60% R USB")
         values[peer] = b"bad"
         levels = reader.battery_levels(objects, lambda path, _: values[path])
-        self.assertEqual(reader.waybar_output(levels)["text"], "PeaMK L -- R USB")
+        self.assertEqual(reader.waybar_output(levels)["text"], "darkblue L -- R USB")
 
     def test_curve_change_gets_a_new_estimate_method(self):
         first = reader.decode_telemetry(packet(), [[3450, 0], [4200, 100]])
@@ -131,9 +131,9 @@ class TelemetryStorageTest(unittest.TestCase):
         self.assertEqual(rows[1]["leds"], "on")
         self.assertEqual(rows[1]["eligible"], 0)
         metrics = monitor.exposition(rows, 1000)
-        self.assertIn('peamk_supply_voltage_volts{half="right"} 4.95', metrics)
-        self.assertNotIn('peamk_battery_estimated_ratio{', metrics)
-        self.assertNotIn('peamk_battery_discharge_ratio{', metrics)
+        self.assertIn('keyboard_supply_voltage_volts{half="right"} 4.95', metrics)
+        self.assertNotIn('keyboard_battery_estimated_ratio{', metrics)
+        self.assertNotIn('keyboard_battery_discharge_ratio{', metrics)
 
     def test_auto_conditions_require_settling_and_break_on_usb_or_led_changes(self):
         self.collect(1000)
@@ -180,7 +180,7 @@ class TelemetryStorageTest(unittest.TestCase):
             self.assertEqual(rows[0]["reporting_state"], "disconnected")
             self.assertEqual(rows[0]["power"], "unknown")
             self.assertEqual(rows[0]["leds"], "unknown")
-            self.assertIn('peamk_usb_power{half="left"} NaN', monitor.exposition(rows, now))
+            self.assertIn('keyboard_usb_power{half="left"} NaN', monitor.exposition(rows, now))
         self.assertFalse(self.collect(1900)[0]["eligible"])
 
     def test_migration_keeps_existing_rows_and_annotations(self):
@@ -206,8 +206,8 @@ class TelemetryStorageTest(unittest.TestCase):
     def test_stale_exporter_does_not_keep_claiming_usb_power(self):
         rows = self.collect(1000, usb=True, mv=4950)
         metrics = monitor.exposition(rows, 1700)
-        self.assertIn('peamk_usb_power{half="right"} NaN', metrics)
-        self.assertNotIn('peamk_reporting_state_info{', metrics)
+        self.assertIn('keyboard_usb_power{half="right"} NaN', metrics)
+        self.assertNotIn('keyboard_reporting_state_info{', metrics)
 
     def test_manual_experiment_note_starts_a_new_automatic_segment(self):
         self.collect(1000)

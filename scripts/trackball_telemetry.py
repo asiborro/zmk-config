@@ -28,7 +28,7 @@ def decode(value):
                 last_error=error, motion=bool(flags & 4) if state == "ok" else None)
 
 
-def read_objects(objects, read_value, reader, device_name="PeaMK", address=None):
+def read_objects(objects, read_value, reader, device_name="darkblue", address=None):
     device = reader.select_device(objects, device_name, address)
     if device is None:
         return dict(connected=False, state="disconnected")
@@ -93,11 +93,11 @@ def exposition(row, now, max_age=INTERVAL * 2, transport="bluetooth"):
     lines = []
 
     def metric(name, description, value, kind="gauge", extra=None):
-        lines.extend((f"# HELP peamk_trackball_{name} {description}", f"# TYPE peamk_trackball_{name} {kind}"))
+        lines.extend((f"# HELP keyboard_trackball_{name} {description}", f"# TYPE keyboard_trackball_{name} {kind}"))
         labels = dict(half="right", **(extra or {}))
         suffix = ",".join(f"{key}={json.dumps(val)}" for key, val in labels.items())
         text = "NaN" if value is None else str(int(value)) if isinstance(value, bool) else str(value)
-        lines.append(f"peamk_trackball_{name}{{{suffix}}} {text}")
+        lines.append(f"keyboard_trackball_{name}{{{suffix}}} {text}")
 
     metric("collection_age_seconds", "Seconds since the latest diagnostics collection attempt.", age)
     metric("collection_success", "One when diagnostics were read recently; idle samples may be old.",

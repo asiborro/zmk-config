@@ -23,7 +23,7 @@ MAX_SOURCE_AGE = 180
 VOLTAGE_SETTLE_SECONDS = 120
 BATTERY_MAX_MV = 4250
 USB_MIN_MV = 4400
-CURVE_PATH = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "peamk-battery/curve.json"
+CURVE_PATH = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "keyboard-telemetry/curve.json"
 
 
 def voltage_percent(millivolts, points=None):
@@ -136,7 +136,7 @@ def select_device(objects, device_name, address=None):
     return matches[0] if matches else None
 
 
-def battery_levels(objects, read_value, device_name="PeaMK", curves=None, include_legacy=True, address=None):
+def battery_levels(objects, read_value, device_name="darkblue", curves=None, include_legacy=True, address=None):
     """Identify sides by ZMK's descriptor, never by GATT handle order."""
     levels = {"connected": False, "left": None, "right": None, "proxy": False}
     device_path = select_device(objects, device_name, address)
@@ -179,7 +179,7 @@ def battery_levels(objects, read_value, device_name="PeaMK", curves=None, includ
     return levels
 
 
-def waybar_output(levels, device_name="PeaMK"):
+def waybar_output(levels, device_name="darkblue"):
     def percent(value):
         return "--" if value is None else f"{value}%"
 

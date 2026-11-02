@@ -56,7 +56,7 @@ static const struct zmk_usb_conn_state_changed *as_zmk_usb_conn_state_changed(co
 HARNESS = r'''
 #include "stubs.h"
 #include "trackball_usb.c"
-void peamk_trackball_packet(uint8_t packet[20]) {
+void keyboard_trackball_packet(uint8_t packet[20]) {
     static const uint8_t sample[20] = {1,7,110,0,224,1,0,0,0,0,42,0,0,0,0,0,0,0,4,0};
     memcpy(packet,sample,20); copies++;
     if (unplug_during_copy) hid_ready = false;

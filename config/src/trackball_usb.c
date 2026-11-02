@@ -9,7 +9,7 @@
 #include <zmk/workqueue.h>
 #include "trackball_telemetry.h"
 
-LOG_MODULE_REGISTER(peamk_trackball_usb, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(keyboard_trackball_usb, LOG_LEVEL_INF);
 
 static const struct device *const console = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
 static void report_quality(struct k_work *work);
@@ -29,10 +29,10 @@ static void report_quality(struct k_work *work) {
     uint32_t dtr = 0;
     if (device_is_ready(console) &&
         uart_line_ctrl_get(console, UART_LINE_CTRL_DTR, &dtr) == 0 && dtr) {
-        uint8_t packet[PEAMK_TRACKBALL_PACKET_SIZE];
-        char encoded[PEAMK_TRACKBALL_PACKET_SIZE * 2 + 1];
+        uint8_t packet[KEYBOARD_TRACKBALL_PACKET_SIZE];
+        char encoded[KEYBOARD_TRACKBALL_PACKET_SIZE * 2 + 1];
         static const char digits[] = "0123456789abcdef";
-        peamk_trackball_packet(packet);
+        keyboard_trackball_packet(packet);
         for (size_t i = 0; i < sizeof(packet); i++) {
             encoded[2 * i] = digits[packet[i] >> 4];
             encoded[2 * i + 1] = digits[packet[i] & 15];
@@ -40,7 +40,7 @@ static void report_quality(struct k_work *work) {
         encoded[sizeof(encoded) - 1] = '\0';
         /* Only the diagnostic packet: no keycodes, pointer deltas or sensor I/O.
          * Device uptime lets the reader reject queued/repeated console lines. */
-        LOG_INF("PEAMK_TB1 %u %s", (unsigned int)k_uptime_get_32(), encoded);
+        LOG_INF("KEYBOARD_TB1 %u %s", (unsigned int)k_uptime_get_32(), encoded);
     }
 
     if (usb_active()) {
@@ -61,5 +61,5 @@ static int usb_changed(const zmk_event_t *event) {
     return ZMK_EV_EVENT_BUBBLE;
 }
 
-ZMK_LISTENER(peamk_trackball_usb, usb_changed);
-ZMK_SUBSCRIPTION(peamk_trackball_usb, zmk_usb_conn_state_changed);
+ZMK_LISTENER(keyboard_trackball_usb, usb_changed);
+ZMK_SUBSCRIPTION(keyboard_trackball_usb, zmk_usb_conn_state_changed);

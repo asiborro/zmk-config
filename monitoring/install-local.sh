@@ -12,17 +12,17 @@ install -m 644 "$repo_dir/scripts/battery-monitor.py" "$repo_dir/scripts/waybar-
   "$repo_dir/scripts/trackball_usb_monitor.py" "$HOME/.local/lib/keyboard-telemetry/"
 if [[ -d "$HOME/.config/waybar/scripts" ]]; then
     install -m 755 "$repo_dir/scripts/waybar-battery.py" "$HOME/.config/waybar/scripts/waybar-battery.py"
-    install -m 644 "$kit_dir/waybar-battery.css" "$HOME/.config/waybar/peamk-battery.css"
+    install -m 644 "$kit_dir/waybar-battery.css" "$HOME/.config/waybar/darkblue-battery.css"
     /usr/bin/python3 - <<'PY'
 from datetime import datetime
 from pathlib import Path
 import re
 import shutil
 style = Path.home() / ".config/waybar/style.css"
-if style.exists() and '"peamk-battery.css"' not in style.read_text():
-    backup = style.with_name("style.css.before-peamk-" + datetime.now().strftime("%Y%m%d-%H%M%S%f"))
+if style.exists() and '"darkblue-battery.css"' not in style.read_text():
+    backup = style.with_name("style.css.before-keyboard-" + datetime.now().strftime("%Y%m%d-%H%M%S%f"))
     shutil.copy2(style, backup)
-    style.write_text('@import "peamk-battery.css";\n' + style.read_text())
+    style.write_text('@import "darkblue-battery.css";\n' + style.read_text())
 config = Path.home() / ".config/waybar/config.jsonc"
 if config.exists():
     original = config.read_text()
@@ -40,22 +40,12 @@ exec /usr/bin/python3 "$HOME/.local/lib/keyboard-telemetry/battery-monitor.py" "
 EOF
 chmod 755 "$HOME/.local/bin/darkblue-battery"
 # Retain the old CLI as an alias for existing scripts and the historical DB.
-ln -sfn darkblue-battery "$HOME/.local/bin/peamk-battery"
 install -m 644 "$kit_dir/darkblue-battery.service" "$kit_dir/roseblue-trackball.service" \
   "$kit_dir/keyboard-telemetry-tunnel.service" "$HOME/.config/systemd/user/"
-old_tunnel_active=false
-if systemctl --user is-enabled --quiet peamk-battery-tunnel.service 2>/dev/null; then
-    old_tunnel_active=true
-fi
-for old_service in peamk-battery.service peamk-battery-tunnel.service; do
-    if [[ -f "$HOME/.config/systemd/user/$old_service" ]]; then
-        systemctl --user disable --now "$old_service"
-    fi
-done
 systemctl --user daemon-reload
 systemctl --user enable darkblue-battery.service roseblue-trackball.service
 systemctl --user restart darkblue-battery.service roseblue-trackball.service
-if [[ ${1:-} == "--with-tunnel" || $old_tunnel_active == true ]]; then
+if [[ ${1:-} == "--with-tunnel" ]]; then
     systemctl --user enable keyboard-telemetry-tunnel.service
     systemctl --user restart keyboard-telemetry-tunnel.service
 fi

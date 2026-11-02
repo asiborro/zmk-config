@@ -1,7 +1,7 @@
 // Merge this module into the existing Waybar config and add
-// "custom/peamk-battery" to modules-right. The installer supplies the CSS.
+// "custom/darkblue-battery" to modules-right. The installer supplies the CSS.
 {
-    "custom/peamk-battery": {
+    "custom/darkblue-battery": {
         "exec": "python3 ~/.config/waybar/scripts/waybar-battery.py --device darkblue --address D5:B0:5B:EC:16:5D",
         "return-type": "json",
         "interval": 5,

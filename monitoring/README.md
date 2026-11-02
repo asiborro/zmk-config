@@ -2,7 +2,7 @@
 
 The Linux host samples both Bluetooth battery services every **five minutes**.
 It keeps every attempt, including missing readings, in
-`~/.local/share/peamk-battery/history.sqlite3`. A local HTTP exporter serves the
+`~/.local/share/keyboard-telemetry/history.sqlite3`. A local HTTP exporter serves the
 latest sample without extra Bluetooth polling. Prometheus on `ci4.test` scrapes
 it every 15 seconds through an SSH tunnel and retains 30 days. The local database
 has no automatic expiry and can be exported to CSV.
@@ -75,7 +75,7 @@ current sensor and no charging-completion signal. We retain the original
 percentage for comparison instead of rewriting historical readings.
 
 A measured nonlinear curve can be installed without another firmware flash at
-`~/.config/peamk-battery/curve.json`, with `left` and/or `right` lists of
+`~/.config/keyboard-telemetry/curve.json`, with `left` and/or `right` lists of
 `[millivolts, percent]` pairs in strictly increasing order. Endpoints must be
 0% and 100%. Omitted halves use the default. The file below reproduces the
 uncalibrated endpoints; replace it only with measurements appropriate to your
@@ -176,23 +176,23 @@ specifies 100 mA default charging, so larger batteries also charge much longer.
 ## Metrics and dashboard
 
 After deployment, the dashboard is at
-[darkblue](http://ci4.test:3000/d/peamk-battery/darkblue) and
+[darkblue](http://ci4.test:3000/d/darkblue-battery/darkblue) and
 [roseblue](http://ci4.test:3000/d/roseblue/roseblue).
 
-- `peamk_battery_reported_ratio{half="left|right"}`: raw estimated charge, 0–1.
-- `peamk_battery_estimated_ratio{half,method}`: usable charge estimate, absent on USB.
-- `peamk_supply_voltage_volts{half}`: median supply voltage; not cell voltage on USB.
-- `peamk_supply_raw_voltage_volts{half}`: last unfiltered ADC sample.
-- `peamk_voltage_sample_age_seconds{half}`: actual ADC sample age including relay.
-- `peamk_reporting_state_info{half,state}`: USB/battery/settling/stale/unavailable.
-- `peamk_condition_source_info{half,source}`: voltage inference or manual power annotation.
-- `peamk_leds_source_info{half,source}`: firmware or manual RGB annotation.
-- `peamk_battery_discharge_ratio{half,leds}`: usable battery-only subset.
-- `peamk_battery_read_success{half}` and `peamk_bluetooth_connected`: visibility.
-- `peamk_sample_age_seconds`: collection age, **not** the left firmware's age.
-- `peamk_test_condition_info{half,leds,power}`: effective context (firmware takes priority).
-- `peamk_led_brightness_ratio{half}`: detected or annotated brightness, NaN if unknown.
-- `peamk_battery_capacity_coulombs{half}`: annotated capacity (2700 initially;
+- `keyboard_battery_reported_ratio{half="left|right"}`: raw estimated charge, 0–1.
+- `keyboard_battery_estimated_ratio{half,method}`: usable charge estimate, absent on USB.
+- `keyboard_supply_voltage_volts{half}`: median supply voltage; not cell voltage on USB.
+- `keyboard_supply_raw_voltage_volts{half}`: last unfiltered ADC sample.
+- `keyboard_voltage_sample_age_seconds{half}`: actual ADC sample age including relay.
+- `keyboard_reporting_state_info{half,state}`: USB/battery/settling/stale/unavailable.
+- `keyboard_condition_source_info{half,source}`: voltage inference or manual power annotation.
+- `keyboard_leds_source_info{half,source}`: firmware or manual RGB annotation.
+- `keyboard_battery_discharge_ratio{half,leds}`: usable battery-only subset.
+- `keyboard_battery_read_success{half}` and `keyboard_bluetooth_connected`: visibility.
+- `keyboard_sample_age_seconds`: collection age, **not** the left firmware's age.
+- `keyboard_test_condition_info{half,leds,power}`: effective context (firmware takes priority).
+- `keyboard_led_brightness_ratio{half}`: detected or annotated brightness, NaN if unknown.
+- `keyboard_battery_capacity_coulombs{half}`: annotated capacity (2700 initially;
   divide by 3600 for Ah).
 
 Multiply ratio metrics by 100 to display percentages. Avoid `rate()` on the
@@ -209,7 +209,6 @@ Requires Python 3, PyGObject/Gio, BlueZ and systemd user services. Installation
 does not flash firmware. `install-local.sh` installs the collector, CLI,
 and the user service files, and starts both collectors by default.
 Pass `--with-tunnel` to also start sending data to the configured server.
-An already enabled legacy tunnel is migrated automatically.
 The tunnel uses existing SSH access to `ci4.test` and
 binds only to loopback at both ends; no new LAN-facing port is opened.
 
@@ -217,7 +216,7 @@ When `~/.config/waybar/scripts` exists, the installer also updates the Waybar
 reader and installs the matching dark background, 10 px corners and 210 px
 minimum width. It imports only the battery stylesheet, backing up the main
 stylesheet first. Merge [waybar-battery.jsonc](waybar-battery.jsonc) into the
-existing config for a five-second refresh and add `custom/peamk-battery` to
+existing config for a five-second refresh and add `custom/darkblue-battery` to
 `modules-right`. Reload Waybar with `pkill -USR2 -x waybar`. Disconnected and
 missing readings retain `L -- R --`, so the widget does not disappear or shrink.
 Waybar reads only the two telemetry characteristics when available; the
@@ -281,18 +280,18 @@ five minutes. Neither idle nor charging stops collection. Deep sleep, another
 host profile and link loss appear disconnected; old firmware appears unsupported.
 The ordinary Waybar path does not add trackball Bluetooth reads.
 
-`peamk_trackball_squal` and `peamk_trackball_shutter_cycles` are available only
+`keyboard_trackball_squal` and `keyboard_trackball_shutter_cycles` are available only
 when the sensor is ready, the last operation succeeded, and the sample is no
 more than **30 seconds** old. Missing data is NaN, never an invented zero.
-`peamk_trackball_sample_age_seconds` includes time elapsed in the collector cache.
+`keyboard_trackball_sample_age_seconds` includes time elapsed in the collector cache.
 Stale means there has been no recent sensor burst: this is expected while idle
 but can also indicate stalled acquisition. It is not itself evidence of bad optics.
 
-Other metrics include `peamk_trackball_ready`, `peamk_trackball_last_error`,
-`peamk_trackball_init_retries`, `peamk_trackball_init_stage`,
-`peamk_trackball_quality_available`, `peamk_trackball_collection_success`,
-`peamk_trackball_state_info`, `peamk_trackball_bursts_total` and
-`peamk_trackball_read_errors_total`. Counters reset at firmware boot. The
+Other metrics include `keyboard_trackball_ready`, `keyboard_trackball_last_error`,
+`keyboard_trackball_init_retries`, `keyboard_trackball_init_stage`,
+`keyboard_trackball_quality_available`, `keyboard_trackball_collection_success`,
+`keyboard_trackball_state_info`, `keyboard_trackball_bursts_total` and
+`keyboard_trackball_read_errors_total`. Counters reset at firmware boot. The
 collector reads every ten seconds, so graphs are sampled diagnostics and do
 not record every instantaneous motion burst.
 
@@ -305,7 +304,7 @@ appears until the updated right firmware is flashed and the ball is moved.
 
 ## USB trackball measurements
 
-`darkblue-right-debug` and `roseblue-right` enable `CONFIG_PEAMK_TRACKBALL_USB_TELEMETRY`. A low-priority
+`darkblue-right-debug` and `roseblue-right` enable `CONFIG_KEYBOARD_TRACKBALL_USB_TELEMETRY`. A low-priority
 work item copies the same 20-byte packet and emits one structured log line
 every two seconds while USB is configured, not suspended, and CDC ACM DTR is
 asserted. Disconnect/suspend cancels the work; a configured USB connection
@@ -313,7 +312,7 @@ without an open console schedules checks but emits no snapshots. The reporter
 does not read SPI, generate input events, change endpoints or enable a shell.
 Bluetooth telemetry remains available in the same firmware.
 
-The line's payload is `PEAMK_TB1 <uptime_ms> <40 hexadecimal characters>`.
+The line's payload is `KEYBOARD_TB1 <uptime_ms> <40 hexadecimal characters>`.
 `uptime_ms` is an unsigned 32-bit millisecond counter, wrapping after about
 49 days. The hexadecimal packet uses the existing Bluetooth protocol above;
 the ordinary logger prefix and ANSI color escapes are not part of the payload.
@@ -339,7 +338,7 @@ below stores those samples in its own history and Prometheus job.
 
 | Device | Selection | Database | Cached metrics |
 | --- | --- | --- | --- |
-| darkblue | Bluetooth `D5:B0:5B:EC:16:5D` | `~/.local/share/peamk-battery/history.sqlite3` | `127.0.0.1:19108` |
+| darkblue | Bluetooth `D5:B0:5B:EC:16:5D` | `~/.local/share/keyboard-telemetry/history.sqlite3` | `127.0.0.1:19108` |
 | roseblue | USB serial `047B8C32401DC31D` | `~/.local/share/roseblue/history.sqlite3` | `127.0.0.1:19109` |
 
 Both services run indefinitely, including idle, charging and unplugged periods.
@@ -364,12 +363,7 @@ sensor status and USB/collection indicators distinguish historical values from
 current readings. NaNs are excluded before this historical lookup; the raw
 metrics and graphs still contain gaps when no fresh sample is available.
 
-The firmware's existing `PEAMK_*` protocol identifiers, metric prefixes,
-darkblue's historical database path and original Grafana UID are retained for
-compatibility. Display names, service names and current scrape jobs use the new
-names. Darkblue's dashboard includes the old `peamk-battery` job when querying
-history. No existing samples are deleted or relabeled. The old CLI is an alias
-for `darkblue-battery`. Waybar pins darkblue's Bluetooth address and preserves
+Waybar pins darkblue's Bluetooth address and preserves
 the existing widget style.
 
 Serial access is required for the user running `roseblue-trackball.service`.

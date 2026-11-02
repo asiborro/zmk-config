@@ -27,8 +27,8 @@ class QualityTest(unittest.TestCase):
         row = self.collect(squal=0, shutter=0)
         self.assertEqual(track.latest(self.db)["squal"], 0)
         metrics = track.exposition(row, 100)
-        self.assertIn('peamk_trackball_squal{half="right"} 0', metrics)
-        self.assertIn('peamk_trackball_quality_available{half="right"} 1', metrics)
+        self.assertIn('keyboard_trackball_squal{half="right"} 0', metrics)
+        self.assertIn('keyboard_trackball_quality_available{half="right"} 1', metrics)
 
     def test_startup_no_sample_and_old_sample_are_distinct(self):
         for changes, expected in ((dict(flags=0), "not_ready"), (dict(flags=2), "no_sample"),
@@ -54,22 +54,22 @@ class QualityTest(unittest.TestCase):
     def test_export_includes_elapsed_cache_time_without_renewing_samples(self):
         row = self.collect(age=25)
         text = track.exposition(row, 106)
-        self.assertIn('peamk_trackball_sample_age_seconds{half="right"} 31', text)
-        self.assertIn('peamk_trackball_squal{half="right"} NaN', text)
+        self.assertIn('keyboard_trackball_sample_age_seconds{half="right"} 31', text)
+        self.assertIn('keyboard_trackball_squal{half="right"} NaN', text)
         self.assertIn('state="stale"', text)
 
     def test_stopped_collection_cannot_claim_live_sensor_status(self):
         text = track.exposition(self.collect(), 121)
-        self.assertIn('peamk_trackball_ready{half="right"} NaN', text)
-        self.assertIn('peamk_trackball_quality_available{half="right"} 0', text)
-        self.assertNotIn('peamk_trackball_bursts_total{', text)
+        self.assertIn('keyboard_trackball_ready{half="right"} NaN', text)
+        self.assertIn('keyboard_trackball_quality_available{half="right"} 0', text)
+        self.assertNotIn('keyboard_trackball_bursts_total{', text)
 
     def test_reboot_resets_counters_without_losing_prior_history(self):
         self.collect(sequence=1000)
         row = self.collect(now=110, sequence=1, errors=0)
         self.assertEqual(self.db.execute("SELECT COUNT(*) FROM trackball_samples").fetchone()[0], 2)
-        self.assertIn('# TYPE peamk_trackball_bursts_total counter', track.exposition(row, 110))
-        self.assertIn('peamk_trackball_bursts_total{half="right"} 1', track.exposition(row, 110))
+        self.assertIn('# TYPE keyboard_trackball_bursts_total counter', track.exposition(row, 110))
+        self.assertIn('keyboard_trackball_bursts_total{half="right"} 1', track.exposition(row, 110))
 
     def test_collection_failure_is_stored_and_following_reads_recover(self):
         def fail():
@@ -83,14 +83,14 @@ class QualityTest(unittest.TestCase):
         for value in (dict(connected=True, state="unsupported"), dict(connected=False, state="disconnected")):
             row = track.collect(self.db, lambda: value, now=100 + len(value["state"]))
             self.assertIsNone(row["squal"])
-            self.assertIn('peamk_trackball_squal{half="right"} NaN', track.exposition(row, row["timestamp"]))
+            self.assertIn('keyboard_trackball_squal{half="right"} NaN', track.exposition(row, row["timestamp"]))
 
     def test_device_service_and_uuid_are_all_checked(self):
         spec = importlib.util.spec_from_file_location("reader", Path(__file__).with_name("waybar-battery.py"))
         reader = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(reader)
         dev, svc, char = "/device", "/device/service", "/device/service/char"
-        objects = {dev: {reader.DEVICE: {"Alias": "PeaMK", "Connected": True}},
+        objects = {dev: {reader.DEVICE: {"Alias": "darkblue", "Connected": True}},
                    svc: {reader.SERVICE: {"UUID": reader.TELEMETRY_SERVICE}},
                    char: {reader.CHARACTERISTIC: {"UUID": track.UUID, "Service": svc}}}
         self.assertEqual(track.read_objects(objects, lambda *_: packet(), reader)["squal"], 90)

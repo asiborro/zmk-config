@@ -13,7 +13,7 @@ def line(uptime, **changes):
     values = dict(version=1, flags=7, squal=110, retries=0, shutter=480, error=0,
                   age=0, sequence=42, errors=0, stage=4, reserved=0)
     values.update(changes)
-    return f"[00:01:00.000,000] <inf> peamk_trackball_usb: PEAMK_TB1 {uptime} " + track.PACKET.pack(*values.values()).hex()
+    return f"[00:01:00.000,000] <inf> keyboard_trackball_usb: KEYBOARD_TB1 {uptime} " + track.PACKET.pack(*values.values()).hex()
 
 
 class UsbQualityTest(unittest.TestCase):
@@ -27,7 +27,7 @@ class UsbQualityTest(unittest.TestCase):
     def test_unrelated_and_malformed_lines_are_never_reported(self):
         for text in ('key_pressed: 42', '<err> zmk: Failed to set output', line(5)[:-1],
                      line(5)+'00', line(5, version=2), line(5, shutter=512), line(2**32),
-                     line(5).replace('PEAMK_TB1', 'PEAMK_TB2')):
+                     line(5).replace('KEYBOARD_TB1', 'KEYBOARD_TB2')):
             with self.subTest(text=text):
                 self.assertIsNone(usb.parse_line(text))
 
@@ -84,8 +84,8 @@ class UsbQualityTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             for serial in ('FIRST', 'SECOND'):
-                (root / f'usb-ZMK_Project_PeaMK_{serial}-if00').touch()
-            self.assertEqual(usb.find_port('SECOND', root).name, 'usb-ZMK_Project_PeaMK_SECOND-if00')
+                (root / f'usb-ZMK_Project_darkblue_{serial}-if00').touch()
+            self.assertEqual(usb.find_port('SECOND', root).name, 'usb-ZMK_Project_darkblue_SECOND-if00')
             with self.assertRaises(FileNotFoundError):
                 usb.find_port('MISSING', root)
             with self.assertRaises(ValueError):

@@ -24,7 +24,7 @@ import trackball_telemetry
 HALVES = ("left", "right")
 INTERVAL = 300
 SETTLE_SECONDS = 600
-DEFAULT_DATABASE = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")) / "peamk-battery/history.sqlite3"
+DEFAULT_DATABASE = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")) / "keyboard-telemetry/history.sqlite3"
 
 
 def database(path):
@@ -187,49 +187,49 @@ def exposition(rows, now, max_age=INTERVAL * 2):
 
     age = max(0, now - rows[0]["timestamp"]) if rows else None
     fresh = bool(rows) and age <= max_age
-    metric("peamk_sample_age_seconds", "Age of the latest collection attempt, not of the left firmware sample.", [({}, age)])
-    metric("peamk_collection_success", "One if a recent BlueZ collection completed without an exception.", [({}, fresh and not rows[0]["error"])])
-    metric("peamk_bluetooth_connected", "Central connected to this Linux host; NaN when unknown.", [({}, rows[0]["connected"] if fresh else None)])
-    metric("peamk_battery_read_success", "One if this half returned a valid value in the latest recent collection.",
+    metric("keyboard_sample_age_seconds", "Age of the latest collection attempt, not of the left firmware sample.", [({}, age)])
+    metric("keyboard_collection_success", "One if a recent BlueZ collection completed without an exception.", [({}, fresh and not rows[0]["error"])])
+    metric("keyboard_bluetooth_connected", "Central connected to this Linux host; NaN when unknown.", [({}, rows[0]["connected"] if fresh else None)])
+    metric("keyboard_battery_read_success", "One if this half returned a valid value in the latest recent collection.",
            [({"half": row["half"]}, fresh and (row["reporting_state"] in ("battery", "usb", "settling")
             if row["telemetry"] else row["level"] is not None)) for row in rows])
-    metric("peamk_battery_reported_ratio", "Raw voltage-derived estimate; USB may force 1; left may be stale in firmware.",
+    metric("keyboard_battery_reported_ratio", "Raw voltage-derived estimate; USB may force 1; left may be stale in firmware.",
            [({"half": row["half"]}, row["level"] / 100) for row in rows if fresh and row["level"] is not None])
-    metric("peamk_battery_discharge_ratio", "Battery-only estimate after settling; excludes USB, stale and clipped readings.",
+    metric("keyboard_battery_discharge_ratio", "Battery-only estimate after settling; excludes USB, stale and clipped readings.",
            [({"half": row["half"], "leds": row["leds"]}, analysis_level(row) / 100)
             for row in rows if fresh and row["eligible"]])
-    metric("peamk_discharge_sample_eligible", "One if the latest sample meets the annotated discharge comparison conditions.",
+    metric("keyboard_discharge_sample_eligible", "One if the latest sample meets the annotated discharge comparison conditions.",
            [({"half": row["half"]}, fresh and bool(row["eligible"])) for row in rows])
-    metric("peamk_test_condition_info", "Effective conditions; firmware values override annotations.",
+    metric("keyboard_test_condition_info", "Effective conditions; firmware values override annotations.",
            [({"half": row["half"], "leds": row["leds"], "power": row["power"]}, 1) for row in rows if fresh])
-    metric("peamk_usb_power", "Inferred/annotated power: 1 USB, 0 battery, NaN uncertain; not charge completion.",
+    metric("keyboard_usb_power", "Inferred/annotated power: 1 USB, 0 battery, NaN uncertain; not charge completion.",
            [({"half": row["half"]}, {"usb": 1, "battery": 0}.get(row["power"]) if fresh else None) for row in rows])
-    metric("peamk_leds_enabled", "RGB state: 1 on, 0 off, NaN unknown.",
+    metric("keyboard_leds_enabled", "RGB state: 1 on, 0 off, NaN unknown.",
            [({"half": row["half"]}, {"on": 1, "off": 0}.get(row["leds"]) if fresh else None) for row in rows])
-    metric("peamk_led_brightness_ratio", "Detected or annotated RGB brightness; NaN when unknown.",
+    metric("keyboard_led_brightness_ratio", "Detected or annotated RGB brightness; NaN when unknown.",
            [({"half": row["half"]}, None if not fresh or row["brightness"] is None else row["brightness"] / 100) for row in rows])
-    metric("peamk_battery_capacity_coulombs", "User-annotated nominal battery capacity (1 mAh = 3.6 coulombs).",
+    metric("keyboard_battery_capacity_coulombs", "User-annotated nominal battery capacity (1 mAh = 3.6 coulombs).",
            [({"half": row["half"]}, row["capacity_mah"] * 3.6) for row in rows])
-    metric("peamk_condition_since_timestamp_seconds", "Time the current test conditions were annotated.",
+    metric("keyboard_condition_since_timestamp_seconds", "Time the current test conditions were annotated.",
            [({"half": row["half"]}, row["condition_since"]) for row in rows])
     for name, description, field, scale in (
-        ("peamk_supply_voltage_volts", "Median of five ADC readings; USB measures supply, not cell voltage.", "voltage_mv", 1000),
-        ("peamk_supply_raw_voltage_volts", "Last unfiltered ADC supply reading.", "raw_voltage_mv", 1000),
-        ("peamk_voltage_sample_age_seconds", "Age of the ADC sample, including split relay delay.", "source_age_seconds", 1),
-        ("peamk_telemetry_relay_age_seconds", "Age of power and RGB metadata at the central.", "relay_age_seconds", 1),
+        ("keyboard_supply_voltage_volts", "Median of five ADC readings; USB measures supply, not cell voltage.", "voltage_mv", 1000),
+        ("keyboard_supply_raw_voltage_volts", "Last unfiltered ADC supply reading.", "raw_voltage_mv", 1000),
+        ("keyboard_voltage_sample_age_seconds", "Age of the ADC sample, including split relay delay.", "source_age_seconds", 1),
+        ("keyboard_telemetry_relay_age_seconds", "Age of power and RGB metadata at the central.", "relay_age_seconds", 1),
     ):
         metric(name, description, [({"half": row["half"]}, row[field] / scale)
                                    for row in rows if fresh and row[field] is not None])
-    metric("peamk_battery_estimated_ratio", "Voltage estimate; absent on USB, stale data or after a power transition.",
+    metric("keyboard_battery_estimated_ratio", "Voltage estimate; absent on USB, stale data or after a power transition.",
            [({"half": row["half"], "method": row["estimate_method"]}, row["estimated_level"] / 100)
             for row in rows if fresh and row["estimated_level"] is not None])
-    metric("peamk_reporting_state_info", "Reporting state; USB does not imply a full battery.",
+    metric("keyboard_reporting_state_info", "Reporting state; USB does not imply a full battery.",
            [({"half": row["half"], "state": row["reporting_state"] or "legacy"}, 1)
             for row in rows if fresh])
-    metric("peamk_condition_source_info", "Source of power values: voltage-inference or manual annotation; old firmware detection was unreliable.",
+    metric("keyboard_condition_source_info", "Source of power values: voltage-inference or manual annotation; old firmware detection was unreliable.",
            [({"half": row["half"], "source": row["power_source"] or "annotation"}, 1)
             for row in rows if fresh])
-    metric("peamk_leds_source_info", "Source of RGB values: firmware or manual annotation.",
+    metric("keyboard_leds_source_info", "Source of RGB values: firmware or manual annotation.",
            [({"half": row["half"], "source": row["leds_source"] or "annotation"}, 1)
             for row in rows if fresh])
     return "\n".join(lines) + "\n"

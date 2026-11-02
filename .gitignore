@@ -8,3 +8,4 @@
 /zmk-pmw3610-driver/
 /artifacts/
 __pycache__/
+.serena/

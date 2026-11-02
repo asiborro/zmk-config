@@ -52,7 +52,7 @@ void pmw3610_diagnostics_burst(const struct device *dev, const uint8_t *burst, i
     k_spin_unlock(&quality_lock, key);
 }
 
-void peamk_trackball_packet(uint8_t packet[PEAMK_TRACKBALL_PACKET_SIZE]) {
+void keyboard_trackball_packet(uint8_t packet[KEYBOARD_TRACKBALL_PACKET_SIZE]) {
     k_spinlock_key_t key = k_spin_lock(&quality_lock);
     packet[0] = 1;
     packet[1] = (quality.valid ? BIT(0) : 0) | (quality.ready ? BIT(1) : 0) |
