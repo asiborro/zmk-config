@@ -8,7 +8,8 @@ if(CONFIG_PMW3610)
     "${pmw_patch_script}"
     "${CMAKE_CURRENT_LIST_DIR}/../patches/pmw3610-startup-retries.patch"
     "${CMAKE_CURRENT_LIST_DIR}/../patches/pmw3610-quality-observer.patch"
-    "${CMAKE_CURRENT_LIST_DIR}/../patches/pmw3610-write-clock-delay.patch")
+    "${CMAKE_CURRENT_LIST_DIR}/../patches/pmw3610-write-clock-delay.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../patches/pmw3610-split-peripheral.patch")
   execute_process(
     COMMAND "${PYTHON_EXECUTABLE}" "${pmw_patch_script}"
       "${ZEPHYR_ZMK_PMW3610_DRIVER_MODULE_DIR}"

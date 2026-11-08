@@ -6,6 +6,10 @@ controller as central. Both use the Colemak-DH keymap and matrix, so keys can
 be added or mapped differently later. The USB/Bluetooth device
 names are `darkblue` and `roseblue`.
 
+Roseblue's main keys form a **5-column by 3-row grid on each side**, without
+Darkblue's extra fourth-row keys. All five columns use hardware rows 2, 1, 0
+from top to bottom; Roseblue does not inherit Darkblue's taller-column offsets.
+
 Each owns `config/<name>.keymap`, `<name>.conf`, side-specific `.conf` files,
 and `config/boards/shields/<name>/`. Change key count and logical positions
 in `<name>.dtsi`, electrical scanning in `<name>_r2c.dtsi`, bindings in its
@@ -22,7 +26,8 @@ Roseblue controllers need the matching firmware for that link.
 - Cosmos-recommended [Inorichi PMW3610 driver](https://github.com/inorichi/zmk-pmw3610-driver)
   pinned to `1d9c2c68ca76012e1b1e5f6ef02fa5eadc4ca399`, with a local
   [startup retry patch](patches/pmw3610-startup-retries.patch), passive quality
-  observers, and a [SPI clock timing correction](patches/pmw3610-write-clock-delay.patch).
+  observers, a [SPI clock timing correction](patches/pmw3610-write-clock-delay.patch),
+  and [raw motion forwarding on split peripherals](patches/pmw3610-split-peripheral.patch).
 - Zephyr 3.5 build image pinned by digest to match this ZMK release.
 - Local Lemon board and boot-key module; provenance and license are in
   [`config/UPSTREAM`](config/UPSTREAM) and [`config/LICENSE-ZMK`](config/LICENSE-ZMK).
@@ -125,6 +130,7 @@ the same checks locally after `west update`:
 python3 scripts/check-pmw3610-startup.py zmk-pmw3610-driver
 python3 scripts/check-pmw3610-clock.py zmk-pmw3610-driver
 python3 scripts/check-pmw3610-quality.py zmk-pmw3610-driver
+python3 scripts/check-pmw3610-split.py zmk-pmw3610-driver
 ```
 
 ## Left and right battery levels
