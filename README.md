@@ -9,6 +9,10 @@ names are `darkblue` and `roseblue`.
 Roseblue's main keys form a **5-column by 3-row grid on each side**, without
 Darkblue's extra fourth-row keys. All five columns use hardware rows 2, 1, 0
 from top to bottom; Roseblue does not inherit Darkblue's taller-column offsets.
+Its left thumb rows are also mounted in the opposite order: hardware columns
+3/4/5 provide Esc/Media, Space/Nav and Tab/Mouse; columns 0/1/2 provide
+right-click/Scroll, Space/Vi and left-click. The matrix transform swaps these
+rows for every layer.
 
 Each owns `config/<name>.keymap`, `<name>.conf`, side-specific `.conf` files,
 and `config/boards/shields/<name>/`. Change key count and logical positions
