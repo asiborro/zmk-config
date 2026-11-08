@@ -1,0 +1,22 @@
+--- a/src/pmw3610.c
++++ b/src/pmw3610.c
+@@ -610,6 +610,11 @@
+ #endif
+ 
+ static enum pixart_input_mode get_input_mode_for_current_layer(const struct device *dev) {
++#if IS_ENABLED(CONFIG_ZMK_SPLIT) && !IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
++    /* The central applies its active-layer processors to forwarded raw motion. */
++    ARG_UNUSED(dev);
++    return MOVE;
++#else
+     const struct pixart_config *config = dev->config;
+     uint8_t curr_layer = zmk_keymap_highest_layer_active();
+     for (size_t i = 0; i < config->scroll_layers_len; i++) {
+@@ -624,6 +629,7 @@
+         }
+     }
+     return MOVE;
++#endif
+ }
+ 
+ static int pmw3610_report_data(const struct device *dev) {

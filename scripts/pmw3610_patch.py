@@ -10,7 +10,8 @@ import tempfile
 REVISION = "1d9c2c68ca76012e1b1e5f6ef02fa5eadc4ca399"
 PATCH = Path(__file__).resolve().parents[1] / "patches/pmw3610-startup-retries.patch"
 PATCHES = (PATCH, PATCH.with_name("pmw3610-quality-observer.patch"),
-           PATCH.with_name("pmw3610-write-clock-delay.patch"))
+           PATCH.with_name("pmw3610-write-clock-delay.patch"),
+           PATCH.with_name("pmw3610-split-peripheral.patch"))
 
 
 def git(driver, *args):
