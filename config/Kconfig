@@ -20,10 +20,12 @@ config KEYBOARD_BATTERY_TELEMETRY
 
 config KEYBOARD_TRACKBALL_TELEMETRY
     bool "Keyboard passive PMW3610 quality diagnostics"
-    depends on KEYBOARD_BATTERY_TELEMETRY && PMW3610 && ZMK_SPLIT_ROLE_CENTRAL
+    depends on KEYBOARD_BATTERY_TELEMETRY && PMW3610
     help
       Cache SQUAL, shutter, startup status and SPI read errors from existing
       driver operations. Bluetooth reads do not perform sensor I/O or wake it.
+      Diagnostics stay local to the controller with the sensor, including a
+      split peripheral with USB logging.
 
 config KEYBOARD_TRACKBALL_USB_TELEMETRY
     bool "Keyboard trackball diagnostics on the USB debug console"

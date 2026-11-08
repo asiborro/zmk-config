@@ -1,9 +1,9 @@
 # darkblue and roseblue firmware
 
 Two independent ZMK configurations for Cosmos Lemon Wireless v2 hardware:
-**darkblue** is the split keyboard; **roseblue** is currently the secondary
-trackball with no physical keys. Both start with the same keymap and matrix,
-so keys can be added or mapped differently later. The USB/Bluetooth device
+**darkblue** uses its right controller as central; **roseblue** uses its left
+controller as central. Both use the Colemak-DH keymap and matrix, so keys can
+be added or mapped differently later. The USB/Bluetooth device
 names are `darkblue` and `roseblue`.
 
 Each owns `config/<name>.keymap`, `<name>.conf`, side-specific `.conf` files,
@@ -12,8 +12,9 @@ in `<name>.dtsi`, electrical scanning in `<name>_r2c.dtsi`, bindings in its
 keymap, and LED counts in its own `boards/` overlays. These are separate files,
 not aliases or links to the other keyboard. The controller definitions,
 PMW3610 wiring/tuning, driver patches and telemetry implementation are shared.
-Roseblue retains the right-central/split configuration for now, matching
-darkblue; it does not require a left half to use the trackball over USB.
+Roseblue's left controller works on its own over USB or Bluetooth. Its existing
+right-side trackball forwards motion over the split link to the left; both
+Roseblue controllers need the matching firmware for that link.
 
 ## Firmware versions
 
@@ -40,8 +41,8 @@ Kconfig settings, and a manifest recording exact dependency revisions.
 | `darkblue-left-` | Main keyboard left peripheral |
 | `darkblue-right-` | Main keyboard right central, normal battery build |
 | `darkblue-right-debug-` | Optional main keyboard right with USB diagnostics |
-| `roseblue-left-` | Secondary left configuration, available for future keys |
-| `roseblue-right-` | Secondary trackball, USB diagnostics enabled |
+| `roseblue-left-` | Roseblue left central; works without the right half |
+| `roseblue-right-` | Roseblue right peripheral with trackball and USB diagnostics |
 | `reset-` | Optional recovery image; clears saved settings and pairings |
 
 This keyboard uses **v0.2 (v2) Lemon Wireless controllers**. All automatic
@@ -56,6 +57,18 @@ Flash the matching left and right UF2 files to the corresponding `LEMONBOOT`
 drives after double-tapping each controller's reset button. Use normal firmware
 for everyday battery operation. The reset image is for recovery, not a required
 step in this update; flashing it erases existing pairings.
+
+### Roseblue bootloader keys
+
+On Roseblue's base layer, press **Q + W** (the first two top-row keys) within
+50 ms of each other and **hold both for two seconds** to enter the left
+controller's bootloader. Releasing either key early cancels bootloader entry;
+a short chord does not type Q or W. This combo needs no layer or right half.
+Individual Q and W presses retain their usual functions.
+
+For recovery, hold the top-left Q key while powering on or resetting the left
+controller. The existing boot-magic check recognizes it during the first
+500 ms. Neither method clears saved settings or pairings.
 
 For local builds, Docker uses the same pinned SDK and the same Python build
 command as CI. Both read **`build.yaml`**; no second target list is maintained.
@@ -140,7 +153,8 @@ nominal scroll speed at 800 CPI with 1/16 scaling. Native sensor counts and
 software-scaled counts can differ in individual reports; equal nominal speed
 does not guarantee identical feel or improved smoothness.
 
-Both right images request a **7.5 ms Bluetooth connection interval** by
+The host-facing centrals (darkblue right and roseblue left) request a
+**7.5 ms Bluetooth connection interval** by
 setting the preferred minimum and maximum to 6 (in 1.25 ms units), replacing
 the previous 7.5–15 ms range. This targets report batching during fast movement;
 the host decides the actual interval, which must be checked after reconnecting.
@@ -150,8 +164,10 @@ consumption; the effects on wireless smoothness and runtime need measurement.
 
 ### Trackball optical quality
 
-The right firmware exposes PMW3610 **SQUAL**, shutter, sample age, startup status
-and SPI read-error counts over Bluetooth. Values are cached from normal motion
+The sensor-bearing right firmware exposes PMW3610 **SQUAL**, shutter, sample age, startup status
+and SPI read-error counts over Bluetooth. On Roseblue these diagnostics remain
+local to the right peripheral and are collected over its USB console; only
+pointer motion and battery readings are forwarded to the left. Values are cached from normal motion
 bursts; reading diagnostics does not perform sensor I/O or reset the idle timer.
 
 The monitor stores these diagnostics every **10 seconds**, independently of
@@ -192,8 +208,10 @@ timestamps before reporting values. Move the ball to produce fresh samples.
 USB sample age is measured when the firmware emits its snapshot; it excludes
 any subsequent transport delay.
 
-Flash the named right image onto its matching keyboard. Roseblue has no keys
-at present: double-tap its physical reset button to enter the bootloader.
+Flash the named right image onto its matching controller. For Roseblue, connect
+the left controller to the host for keyboard and mouse input; the right USB
+port provides sensor diagnostics. Double-tap the right controller's physical
+reset button to enter its bootloader. The left also has the Q + W combo above.
 Its USB collector selects serial `047B8C32401DC31D`, saves a separate SQLite
 history, and feeds the [roseblue dashboard](http://ci4.test:3000/d/roseblue/roseblue).
 Darkblue is selected by Bluetooth address `D5:B0:5B:EC:16:5D`; changing either

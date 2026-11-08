@@ -1,4 +1,21 @@
 #include "roseblue.dtsi"
+#include "../common/trackball-input.dtsi"
+
+/ {
+    split_inputs {
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        roseblue_trackball_split: trackball@0 {
+            compatible = "zmk,input-split";
+            reg = <0>;
+        };
+    };
+};
+
+&trackball_listener {
+    device = <&roseblue_trackball_split>;
+};
 
 / {
   kscan0: kscan_0 {
