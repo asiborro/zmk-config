@@ -141,6 +141,14 @@ python3 scripts/check-pmw3610-split.py zmk-pmw3610-driver
 
 ### Trackball and Bluetooth power
 
+Darkblue explicitly disables the controller's **2M PHY**, keeping both its
+host and inter-half links on **1M**. The earlier 2M rollback only removed an
+explicit enable; the nRF52840 controller still enabled 2M by default in the
+compiled firmware. ZMK also selects automatic PHY updates for split keyboards.
+This change restores the intended 1M setting without changing pairing storage,
+connection intervals, peripheral latency, transmit power or trackball polling.
+Reconnect stability still needs testing on the actual keyboard.
+
 Darkblue and roseblue use **+8 dBm** Bluetooth transmit power on both halves,
 on battery and USB power, to maximize wireless link margin. This setting does
 not change the trackball's supply voltage. Its effect on battery-powered
