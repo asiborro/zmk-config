@@ -22,6 +22,8 @@
 &trackball_listener {
     status = "okay";
     device = <&trackball>;
+    /* Restore the earlier 75% cursor multiplier for the PAW3395 test. */
+    input-processors = <&scroll_scaler 3 4 &tb_transform (INPUT_TRANSFORM_XY_SWAP | INPUT_TRANSFORM_X_INVERT)>;
 };
 
 &bootloader_key_right {
