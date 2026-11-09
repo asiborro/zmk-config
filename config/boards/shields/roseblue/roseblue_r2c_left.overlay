@@ -9,8 +9,3 @@
 &bootloader_key_left {
     status = "okay";
 };
-
-/* Process the right sensor's forwarded motion on the left central. */
-&trackball_listener {
-    status = "okay";
-};

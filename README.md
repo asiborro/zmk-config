@@ -1,8 +1,8 @@
 # darkblue and roseblue firmware
 
 Two independent ZMK configurations for Cosmos Lemon Wireless v2 hardware:
-**darkblue** uses its right controller as central; **roseblue** uses its left
-controller as central. Both use the Colemak-DH keymap and matrix, so keys can
+**darkblue** and **roseblue** use their right controllers as central. Both use
+Colemak-DH bindings with independent matrix mappings, so keys can
 be added or mapped differently later. The USB/Bluetooth device
 names are `darkblue` and `roseblue`.
 
@@ -19,10 +19,11 @@ and `config/boards/shields/<name>/`. Change key count and logical positions
 in `<name>.dtsi`, electrical scanning in `<name>_r2c.dtsi`, bindings in its
 keymap, and LED counts in its own `boards/` overlays. These are separate files,
 not aliases or links to the other keyboard. The controller definitions,
-PMW3610 wiring/tuning, driver patches and telemetry implementation are shared.
-Roseblue's left controller works on its own over USB or Bluetooth. Its existing
-right-side trackball forwards motion over the split link to the left; both
-Roseblue controllers need the matching firmware for that link.
+input processing and battery telemetry implementation are shared. Darkblue
+keeps its PMW3610; Roseblue currently tests Skree's **PAW3395 VIK** board.
+Roseblue's right controller works on its own over USB or Bluetooth. To use both
+halves, flash the matching left-peripheral image too; the older left-central
+firmware cannot serve as its split peripheral.
 
 ## Firmware versions
 
@@ -33,6 +34,9 @@ Roseblue controllers need the matching firmware for that link.
   observers, a [SPI clock timing correction](patches/pmw3610-write-clock-delay.patch),
   and [raw motion forwarding on split peripherals](patches/pmw3610-split-peripheral.patch).
 - Zephyr 3.5 build image pinned by digest to match this ZMK release.
+- Roseblue's [PAW3395 driver](https://github.com/badjeff/zmk-paw3395-driver)
+  pinned to `bffa61761dc1fb87d8bc04133c55a10bc899a359`, including its bundled
+  nRF52840 library, as recommended by [Skree's board documentation](https://github.com/SkreeCustomKeyboards/PAW3395-Board).
 - Local Lemon board and boot-key module; provenance and license are in
   [`config/UPSTREAM`](config/UPSTREAM) and [`config/LICENSE-ZMK`](config/LICENSE-ZMK).
 
@@ -50,8 +54,8 @@ Kconfig settings, and a manifest recording exact dependency revisions.
 | `darkblue-left-` | Main keyboard left peripheral |
 | `darkblue-right-` | Main keyboard right central, normal battery build |
 | `darkblue-right-debug-` | Optional main keyboard right with USB diagnostics |
-| `roseblue-left-` | Roseblue left central; works without the right half |
-| `roseblue-right-` | Roseblue right peripheral with trackball and USB diagnostics |
+| `roseblue-left-` | Roseblue left peripheral with the corrected 5x3 and thumb mappings |
+| `roseblue-right-` | Roseblue right central with PAW3395 VIK and USB startup diagnostics |
 | `reset-` | Optional recovery image; clears saved settings and pairings |
 
 This keyboard uses **v0.2 (v2) Lemon Wireless controllers**. All automatic
@@ -72,12 +76,32 @@ step in this update; flashing it erases existing pairings.
 On Roseblue's base layer, press **Q + W** (the first two top-row keys) within
 50 ms of each other and **hold both for two seconds** to enter the left
 controller's bootloader. Releasing either key early cancels bootloader entry;
-a short chord does not type Q or W. This combo needs no layer or right half.
+a short chord does not type Q or W. This combo needs no layer; with the right
+now acting as central, it requires the matching right controller to be connected.
 Individual Q and W presses retain their usual functions.
 
 For recovery, hold the top-left Q key while powering on or resetting the left
 controller. The existing boot-magic check recognizes it during the first
 500 ms. Neither method clears saved settings or pairings.
+
+### Roseblue PAW3395 test
+
+Connect the VIK PAW3395 board to Roseblue's right Lemon controller and flash
+`roseblue-right-cosmos_lemon_wireless`. The PAW3395 uses SPI chip select 1
+(P0.08); the shift register remains on chip select 0 (P0.04). Motion uses
+VIK GPIO2/P0.31, with SCK P1.09, MOSI P0.12 and MISO P0.06. SPI runs at 4 MHz.
+CPI is 600 and the minimum motion-report interval is 8 ms (at most 125 Hz).
+The existing pointer-axis transform and scroll-layer scaling are retained.
+
+For a sensor-only USB test, the right image works without the left controller.
+Double-tap the right controller's reset button to enter `LEMONBOOT`. USB
+startup logs are enabled; open the matching serial port with
+`picocom -b 115200 /dev/ttyACM0` (adjust the device path if needed). Look for
+`PAW3395 initialized` or a failed initialization step. Logs are delayed eight
+seconds after boot to allow time to attach the console.
+
+The PAW3395 test uses its own driver logs. The previous PMW3610 SQUAL/shutter
+packet and USB dashboard collection are not available with this sensor.
 
 For local builds, Docker uses the same pinned SDK and the same Python build
 command as CI. Both read **`build.yaml`**; no second target list is maintained.
@@ -146,15 +170,13 @@ on battery and USB power, to maximize wireless link margin. This setting does
 not change the trackball's supply voltage. Its effect on battery-powered
 pointer smoothness and overall runtime still needs measurement on hardware.
 
-Battery reporting, passive SQUAL telemetry and existing idle/sleep timers
-remain enabled.
+Battery reporting and existing idle/sleep timers remain enabled. Passive
+PMW3610 SQUAL telemetry remains available on Darkblue.
 The normal `darkblue-right` image has USB logging disabled; use it for battery
 comparisons.
 
-Both darkblue and roseblue use **125 Hz** trackball updates (nominally every
-8 ms).
-All their right images use this setting, including builds with USB logging.
-Only the right halves have trackballs and need flashing for this change.
+Darkblue polls its PMW3610 at **125 Hz** (nominally every 8 ms). Roseblue's
+PAW3395 is interrupt-driven and limits motion reports to one every **8 ms**.
 
 Both keyboards use **600 CPI with 100% (1:1) movement scaling**. This gives
 the same nominal pointer speed as 800 CPI with 75% scaling, before the host's
@@ -163,7 +185,7 @@ nominal scroll speed at 800 CPI with 1/16 scaling. Native sensor counts and
 software-scaled counts can differ in individual reports; equal nominal speed
 does not guarantee identical feel or improved smoothness.
 
-The host-facing centrals (darkblue right and roseblue left) request a
+The host-facing right centrals on both keyboards request a
 **7.5 ms Bluetooth connection interval** by
 setting the preferred minimum and maximum to 6 (in 1.25 ms units), replacing
 the previous 7.5–15 ms range. This targets report batching during fast movement;
@@ -174,10 +196,8 @@ consumption; the effects on wireless smoothness and runtime need measurement.
 
 ### Trackball optical quality
 
-The sensor-bearing right firmware exposes PMW3610 **SQUAL**, shutter, sample age, startup status
-and SPI read-error counts over Bluetooth. On Roseblue these diagnostics remain
-local to the right peripheral and are collected over its USB console; only
-pointer motion and battery readings are forwarded to the left. Values are cached from normal motion
+Darkblue's right firmware exposes PMW3610 **SQUAL**, shutter, sample age, startup status
+and SPI read-error counts over Bluetooth. Values are cached from normal motion
 bursts; reading diagnostics does not perform sensor I/O or reset the idle timer.
 
 The monitor stores these diagnostics every **10 seconds**, independently of
@@ -199,7 +219,7 @@ claim to fix the intermittent startup/idle fault. See
 
 ### Trackball quality over USB
 
-The **darkblue-right-debug** or **roseblue-right** image supports both Bluetooth quality telemetry and USB
+The **darkblue-right-debug** image supports both Bluetooth quality telemetry and USB
 quality output. It emits a cached diagnostic packet every two seconds while
 USB is configured, awake and the serial console is open. Reporting stops on
 USB disconnect or suspend and performs no extra sensor reads. The normal
@@ -218,12 +238,11 @@ timestamps before reporting values. Move the ball to produce fresh samples.
 USB sample age is measured when the firmware emits its snapshot; it excludes
 any subsequent transport delay.
 
-Flash the named right image onto its matching controller. For Roseblue, connect
-the left controller to the host for keyboard and mouse input; the right USB
-port provides sensor diagnostics. Double-tap the right controller's physical
-reset button to enter its bootloader. The left also has the Q + W combo above.
-Its USB collector selects serial `047B8C32401DC31D`, saves a separate SQLite
-history, and feeds the [roseblue dashboard](http://ci4.test:3000/d/roseblue/roseblue).
+Flash the named right image onto its matching controller. Roseblue's right USB
+port now handles both host input and PAW3395 startup diagnostics. Its existing
+USB collector selects serial `047B8C32401DC31D`, but it expects the old PMW3610
+quality packets and cannot interpret PAW3395 startup logs. The stored history
+and [roseblue dashboard](http://ci4.test:3000/d/roseblue/roseblue) remain available.
 Darkblue is selected by Bluetooth address `D5:B0:5B:EC:16:5D`; changing either
 firmware's name cannot cause the readers to collect from the other device.
 

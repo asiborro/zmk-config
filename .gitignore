@@ -6,6 +6,7 @@
 /tools/
 /bootloader/
 /zmk-pmw3610-driver/
+/zmk-paw3395-driver/
 /artifacts/
 __pycache__/
 .serena/

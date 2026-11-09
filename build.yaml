@@ -22,6 +22,7 @@ include:
     shield: roseblue_r2c_right
     artifact: roseblue-right
     snippet: zmk-usb-logging
+    diagnostics-conf: config/roseblue-diagnostics.conf
   - board: cosmos_lemon_wireless
     shield: settings_reset
     artifact: reset

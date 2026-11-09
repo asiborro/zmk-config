@@ -1,8 +1,26 @@
-/* Right peripheral: forward its sensor's raw motion to the left central. */
+/* Right central with Skree's PAW3395 on the VIK connector. */
 #include "roseblue_r2c.dtsi"
-#include "../common/pmw3610-hardware.dtsi"
+#include "../common/trackball-input.dtsi"
 
-&roseblue_trackball_split {
+/* Chip select 0 remains the keyboard matrix's shift register. */
+&spi1 {
+    cs-gpios = <&gpio0 4 GPIO_ACTIVE_LOW>, <&gpio0 8 GPIO_ACTIVE_LOW>;
+
+    trackball: trackball@1 {
+        compatible = "pixart,paw3395";
+        status = "okay";
+        reg = <1>;
+        spi-max-frequency = <4000000>;
+        irq-gpios = <&gpio0 31 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        cpi = <600>;
+        evt-type = <INPUT_EV_REL>;
+        x-input-code = <INPUT_REL_X>;
+        y-input-code = <INPUT_REL_Y>;
+    };
+};
+
+&trackball_listener {
+    status = "okay";
     device = <&trackball>;
 };
 
