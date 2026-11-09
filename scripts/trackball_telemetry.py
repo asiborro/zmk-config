@@ -1,4 +1,4 @@
-"""Read passive PMW3610 diagnostics; no sensor commands or input data are sent."""
+"""Read passive optical diagnostics; no sensor commands or input data are sent."""
 import importlib.util
 import json
 from pathlib import Path
@@ -9,13 +9,17 @@ UUID = "50ea0003-2f54-4e31-a2b7-6cb20f70a901"
 INTERVAL = 10
 MAX_SAMPLE_AGE = 30
 PACKET = struct.Struct("<BBBBHhHIIBB")
+PAW_PACKET = struct.Struct("<BBBBHhHIIBBBBBB")
 
 
 def decode(value):
-    if len(value) != PACKET.size:
-        raise ValueError("Trackball packet must be 20 bytes")
-    version, flags, squal, retries, shutter, error, age, sequence, errors, stage, reserved = PACKET.unpack(bytes(value))
-    if version != 1 or flags & ~7 or reserved or shutter > 511 or error > 0:
+    value = bytes(value)
+    if len(value) not in (PACKET.size, PAW_PACKET.size):
+        raise ValueError("Trackball packet must be 20 or 24 bytes")
+    version, flags, squal, retries, shutter, error, age, sequence, errors, stage, sensor_id = PACKET.unpack(value[:20])
+    paw = version == 2 and len(value) == PAW_PACKET.size and sensor_id == 1
+    pmw = version == 1 and len(value) == PACKET.size and sensor_id == 0
+    if not (paw or pmw) or flags & ~7 or shutter > (4095 if paw else 511) or error > 0:
         raise ValueError("Unsupported or malformed trackball packet")
     valid, ready = bool(flags & 1), bool(flags & 2)
     state = ("error" if error else "not_ready" if not ready else
@@ -25,7 +29,10 @@ def decode(value):
                 shutter=shutter if state == "ok" else None,
                 source_age_seconds=age if valid else None, sequence=sequence,
                 read_errors=errors, init_retries=retries, init_stage=stage,
-                last_error=error, motion=bool(flags & 4) if state == "ok" else None)
+                last_error=error, motion=bool(flags & 4) if state == "ok" else None,
+                sensor="paw3395" if paw else "pmw3610",
+                **{key: value[index] if paw and state == "ok" else None
+                   for index, key in enumerate(("raw_sum", "raw_max", "raw_min", "observation"), 20)})
 
 
 def read_objects(objects, read_value, reader, device_name="darkblue", address=None):
@@ -59,6 +66,12 @@ def initialize(connection):
         sequence INTEGER, read_errors INTEGER, init_retries INTEGER, init_stage INTEGER,
         last_error INTEGER, motion INTEGER, error TEXT
     )""")
+    columns = {row[1] for row in connection.execute("PRAGMA table_info(trackball_samples)")}
+    for name, definition in (("sensor", "TEXT DEFAULT 'pmw3610'"),
+                             ("raw_sum", "INTEGER"), ("raw_max", "INTEGER"),
+                             ("raw_min", "INTEGER"), ("observation", "INTEGER")):
+        if name not in columns:
+            connection.execute(f"ALTER TABLE trackball_samples ADD COLUMN {name} {definition}")
     connection.commit()
 
 
@@ -69,7 +82,8 @@ def collect(connection, reader=read_bluez, now=None):
         value = dict(connected=None, state="unavailable", error=f"{type(exc).__name__}: {exc}")
     row = {key: value.get(key) for key in (
         "connected", "state", "ready", "squal", "shutter", "source_age_seconds",
-        "sequence", "read_errors", "init_retries", "init_stage", "last_error", "motion", "error")}
+        "sequence", "read_errors", "init_retries", "init_stage", "last_error", "motion", "error",
+        "sensor", "raw_sum", "raw_max", "raw_min", "observation")}
     row["timestamp"] = time.time() if now is None else now
     with connection:
         connection.execute("INSERT INTO trackball_samples (" + ",".join(row) + ") VALUES (" +
@@ -95,6 +109,9 @@ def exposition(row, now, max_age=INTERVAL * 2, transport="bluetooth"):
     def metric(name, description, value, kind="gauge", extra=None):
         lines.extend((f"# HELP keyboard_trackball_{name} {description}", f"# TYPE keyboard_trackball_{name} {kind}"))
         labels = dict(half="right", **(extra or {}))
+        # Keep the existing PMW3610 series; PAW3395 starts separate series.
+        if row and row.get("sensor") == "paw3395":
+            labels["sensor"] = "paw3395"
         suffix = ",".join(f"{key}={json.dumps(val)}" for key, val in labels.items())
         text = "NaN" if value is None else str(int(value)) if isinstance(value, bool) else str(value)
         lines.append(f"keyboard_trackball_{name}{{{suffix}}} {text}")
@@ -109,14 +126,23 @@ def exposition(row, now, max_age=INTERVAL * 2, transport="bluetooth"):
     metric(f"{transport}_connected", f"Host {transport} connection; NaN when unknown.", row["connected"] if fresh else None)
     metric("state_info", "Diagnostics state; stale may mean idle or stalled acquisition.", 1, extra={"state": state})
     metric("quality_available", "One for a recent successful sensor sample, including a legitimate zero SQUAL.", available)
-    metric("squal", "Raw PMW3610 surface-quality register (0..255); not a percentage or distance.", row["squal"] if available else None)
-    metric("shutter_cycles", "Raw nine-bit sensor exposure in clock cycles; not milliseconds.", row["shutter"] if available else None)
+    metric("squal", "Raw sensor surface-quality register (0..255); not a percentage or distance.", row["squal"] if available else None)
+    metric("shutter_cycles", "Raw exposure in sensor clock cycles (PMW3610: 9 bits; PAW3395: 12 bits).", row["shutter"] if available else None)
+    if fresh and row.get("sensor"):
+        metric("sensor_info", "Sensor model identified by the firmware protocol.", 1,
+               extra={"model": row["sensor"]})
+    for field, description in (("raw_sum", "Raw image sum register (0..255)."),
+                               ("raw_max", "Maximum image raw-data register (0..255)."),
+                               ("raw_min", "Minimum image raw-data register (0..255)."),
+                               ("observation", "Raw PAW3395 observation flags (0..255).")):
+        if row and row.get("sensor") == "paw3395":
+            metric(field, description, row.get(field) if available else None)
     metric("sample_age_seconds", "Age of last successful motion burst; includes collector cache age.", source_age)
     for name, field, help_text in (
         ("ready", "ready", "Sensor completed initialization."),
         ("last_error", "last_error", "Last initialization/read errno; zero after success."),
         ("init_retries", "init_retries", "Additional startup attempts in this boot."),
-        ("init_stage", "init_stage", "Startup stage: 0..3 stages, 4 ready."),
+        ("init_stage", "init_stage", "Startup stage (PMW3610: 4 ready; PAW3395: 3 ready)."),
     ):
         metric(name, help_text, row[field] if fresh else None)
     for name, field in (("bursts_total", "sequence"), ("read_errors_total", "read_errors")):

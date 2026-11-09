@@ -1,3 +1,3 @@
 # This host's collector user and this one physical device only.
 # Firmware USB interface; does not match the Cosmos bootloader (1915:6c62).
-SUBSYSTEM=="tty", ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="615e", ATTRS{serial}=="047B8C32401DC31D", GROUP="asiborro", MODE="0660"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="615e", ATTRS{serial}=="A0DD18E29D278282", GROUP="asiborro", MODE="0660"

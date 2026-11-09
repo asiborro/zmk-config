@@ -1,0 +1,72 @@
+--- a/src/paw3395.c
++++ b/src/paw3395.c
+@@ -13,6 +13,17 @@
+ #include <zmk/keymap.h>
+ #include <zmk/events/activity_state_changed.h>
+ #include "paw3395.h"
++#include "paw3395_diagnostics.h"
++
++__weak void paw3395_diagnostics_init(const struct device *dev, uint8_t stage,
++                                    int error, bool ready) {
++    ARG_UNUSED(dev); ARG_UNUSED(stage); ARG_UNUSED(error); ARG_UNUSED(ready);
++}
++
++__weak void paw3395_diagnostics_burst(const struct device *dev, const uint8_t *burst,
++                                     int error) {
++    ARG_UNUSED(dev); ARG_UNUSED(burst); ARG_UNUSED(error);
++}
+ 
+ #include <zephyr/logging/log.h>
+ LOG_MODULE_REGISTER(paw3395, CONFIG_PAW3395_LOG_LEVEL);
+@@ -197,14 +208,17 @@
+ 
+     LOG_INF("PAW3395 async init step %d", data->async_init_step);
+ 
++    paw3395_diagnostics_init(dev, data->async_init_step, 0, false);
+     data->err = async_init_fn[data->async_init_step](dev);
+     if (data->err) {
++        paw3395_diagnostics_init(dev, data->async_init_step, data->err, false);
+         LOG_ERR("PAW3395 initialization failed in step %d", data->async_init_step);
+     } else {
+         data->async_init_step++;
+ 
+         if (data->async_init_step == ASYNC_INIT_STEP_COUNT) {
+             data->ready = true; // sensor is ready to work
++            paw3395_diagnostics_init(dev, data->async_init_step, 0, true);
+             LOG_INF("PAW3395 initialized");
+             paw3395_set_interrupt(dev, true);
+         } else {
+@@ -216,7 +230,9 @@
+ static int paw3395_report_data(const struct device *dev) {
+     struct pixart_data *data = dev->data;
+     const struct pixart_config *config = dev->config;
+-    uint8_t buf[PAW3395_BURST_SIZE];
++    /* Extend the existing motion transaction, without adding polling or wakeups.
++     * PixArt PAW3395DM-T6QU v0.8, section 5.7.1: full burst is 12 bytes. */
++    uint8_t buf[IS_ENABLED(CONFIG_KEYBOARD_TRACKBALL_TELEMETRY) ? 12 : PAW3395_BURST_SIZE];
+ 
+     if (unlikely(!data->ready)) {
+         LOG_WRN("Device is not initialized yet");
+@@ -228,7 +244,10 @@
+ #endif
+ 
+     int err = 0;
+-    err = paw3395_lib_motion_burst_read(&config->spi, buf, PAW3395_BURST_SIZE);
++    err = paw3395_lib_motion_burst_read(&config->spi, buf, sizeof(buf));
++    if (IS_ENABLED(CONFIG_KEYBOARD_TRACKBALL_TELEMETRY)) {
++        paw3395_diagnostics_burst(dev, buf, err);
++    }
+     if (err) {
+         return err;
+     }
+--- /dev/null
++++ b/src/paw3395_diagnostics.h
+@@ -0,0 +1,8 @@
++/* SPDX-License-Identifier: MIT */
++#pragma once
++#include <stdbool.h>
++#include <stdint.h>
++#include <zephyr/device.h>
++/* Passive callbacks; failed reads must never inspect the buffer. */
++void paw3395_diagnostics_init(const struct device *dev, uint8_t stage, int error, bool ready);
++void paw3395_diagnostics_burst(const struct device *dev, const uint8_t *burst, int error);

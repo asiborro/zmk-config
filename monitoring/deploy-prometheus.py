@@ -22,6 +22,24 @@ import urllib.request
 payload = json.load(sys.stdin)
 for content in payload['dashboards'].values():
     json.loads(content)
+stamp = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+dashboard_dir = Path('/opt/monitoring/grafana/dashboards')
+
+def install_dashboards():
+    for name, content in payload['dashboards'].items():
+        if name not in ('darkblue.json', 'roseblue.json'):
+            raise SystemExit('Unexpected dashboard filename')
+        dashboard = dashboard_dir / name
+        if dashboard.exists() and dashboard.read_text() != content:
+            shutil.copy2(dashboard, dashboard.with_name(f'{name}.before-{stamp}.bak'))
+        dashboard.write_text(content)
+        dashboard.chmod(0o644)
+        print(f'Dashboard installed: {dashboard}; Grafana reloads it within 30 seconds')
+
+if payload.get('dashboards_only'):
+    install_dashboards()
+    raise SystemExit(0)
+
 config = Path('/opt/monitoring/prometheus.yml')
 dashboard_dir = Path('/opt/monitoring/grafana/dashboards')
 original = config.read_text()
@@ -92,26 +110,21 @@ if candidate != original:
 else:
     print('Prometheus job already current')
 
-for name, content in payload['dashboards'].items():
-    if name not in ('darkblue.json', 'roseblue.json'):
-        raise SystemExit('Unexpected dashboard filename')
-    dashboard = dashboard_dir / name
-    if dashboard.exists() and dashboard.read_text() != content:
-        shutil.copy2(dashboard, dashboard.with_name(f'{name}.before-{stamp}.bak'))
-    dashboard.write_text(content)
-    dashboard.chmod(0o644)
-    print(f'Dashboard installed: {dashboard}; Grafana reloads it within 30 seconds')
+install_dashboards()
 '''
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("host", nargs="?", default="ci4.test")
+    parser.add_argument("--dashboard", choices=("darkblue", "roseblue"))
+    parser.add_argument("--dashboards-only", action="store_true")
     args = parser.parse_args()
     directory = Path(__file__).parent
     payload = {"job": (directory / "prometheus-job.yml").read_text(),
                "dashboards": {name + ".json": (directory / (name + ".json")).read_text()
-                              for name in ("darkblue", "roseblue")}}
+                              for name in ((args.dashboard,) if args.dashboard else ("darkblue", "roseblue"))},
+               "dashboards_only": args.dashboards_only}
     subprocess.run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", args.host,
                     "sudo -n python3 -c " + shlex.quote(REMOTE)], input=json.dumps(payload), text=True, check=True)
 

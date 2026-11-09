@@ -19,8 +19,8 @@ config KEYBOARD_BATTERY_TELEMETRY
       On the central, relay one split peripheral's telemetry as well.
 
 config KEYBOARD_TRACKBALL_TELEMETRY
-    bool "Keyboard passive PMW3610 quality diagnostics"
-    depends on KEYBOARD_BATTERY_TELEMETRY && PMW3610
+    bool "Keyboard passive optical sensor quality diagnostics"
+    depends on KEYBOARD_BATTERY_TELEMETRY && (PMW3610 || PAW3395)
     help
       Cache SQUAL, shutter, startup status and SPI read errors from existing
       driver operations. Bluetooth reads do not perform sensor I/O or wake it.

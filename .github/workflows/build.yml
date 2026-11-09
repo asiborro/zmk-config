@@ -77,6 +77,10 @@ jobs:
           python3 scripts/check-pmw3610-split.py zmk-pmw3610-driver
           python3 scripts/check-trackball-usb.py
 
+      - name: Test PAW3395 passive quality acquisition
+        if: matrix.artifact == 'roseblue-right'
+        run: python3 scripts/check-paw3395-quality.py zmk-paw3395-driver
+
       - name: West zephyr-export
         run: west zephyr-export
 
