@@ -94,7 +94,8 @@ Connect the VIK PAW3395 board to Roseblue's right Lemon controller and flash
 VIK GPIO2/P0.31, with SCK P1.09, MOSI P0.12 and MISO P0.06. SPI runs at 4 MHz.
 CPI is 500 and the minimum motion-report interval is 8 ms (at most 125 Hz).
 Cursor movement stays **1:1**; sensitivity is reduced in the sensor itself.
-The existing pointer-axis transform and scroll-layer scaling are retained.
+Roseblue uses native sensor axes without swapping, inversion or rotation,
+including on the scroll layer. Scroll-layer scaling remains 1/12.
 
 For a sensor-only USB test, the right image works without the left controller.
 Double-tap the right controller's reset button to enter `LEMONBOOT`. USB

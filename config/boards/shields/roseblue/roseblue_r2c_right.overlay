@@ -22,6 +22,12 @@
 &trackball_listener {
     status = "okay";
     device = <&trackball>;
+    /* Roseblue's PAW3395 uses native axes, without Darkblue's transform. */
+    input-processors = <&scroll_scaler 1 1>;
+
+    scroller {
+        input-processors = <&scroll_scaler 1 12 &zip_xy_to_scroll_mapper>;
+    };
 };
 
 &bootloader_key_right {
