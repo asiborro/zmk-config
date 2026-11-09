@@ -365,7 +365,7 @@ fresh optical readings; `stale` is expected when no recent sensor burst exists.
 
 The roseblue dashboard contains only USB/sensor diagnostics and comparison
 plots against darkblue. It does not invent a left half or battery measurements
-for the USB-only collection. Roseblue uses PAW3395 at 400 CPI with 1:1 cursor movement; Darkblue retains
+for the USB-only collection. Roseblue uses PAW3395 at 500 CPI with 1:1 cursor movement; Darkblue retains
 PMW3610. Raw quality and shutter are sensor-specific and should not be
 interpreted as equivalent across models. The previous USB device history
 remains in `~/.local/share/roseblue/history.sqlite3`.

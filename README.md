@@ -92,7 +92,7 @@ Connect the VIK PAW3395 board to Roseblue's right Lemon controller and flash
 `roseblue-right-cosmos_lemon_wireless`. The PAW3395 uses SPI chip select 1
 (P0.08); the shift register remains on chip select 0 (P0.04). Motion uses
 VIK GPIO2/P0.31, with SCK P1.09, MOSI P0.12 and MISO P0.06. SPI runs at 4 MHz.
-CPI is 400 and the minimum motion-report interval is 8 ms (at most 125 Hz).
+CPI is 500 and the minimum motion-report interval is 8 ms (at most 125 Hz).
 Cursor movement stays **1:1**; sensitivity is reduced in the sensor itself.
 The existing pointer-axis transform and scroll-layer scaling are retained.
 
@@ -181,7 +181,7 @@ comparisons.
 Darkblue polls its PMW3610 at **125 Hz** (nominally every 8 ms). Roseblue's
 PAW3395 is interrupt-driven and limits motion reports to one every **8 ms**.
 
-Darkblue uses **600 CPI**; Roseblue's PAW3395 uses **400 CPI**. Both keep
+Darkblue uses **600 CPI**; Roseblue's PAW3395 uses **500 CPI**. Both keep
 **100% (1:1) cursor movement**, with no software sensitivity multiplier.
 The older 800 CPI with 75% scaling had the same nominal speed as 600 CPI
 with 100% scaling. Scroll-layer scaling is **1/12**, preserving the previous
