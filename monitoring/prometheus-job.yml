@@ -11,4 +11,4 @@
     scrape_timeout: 10s
     static_configs:
       - targets: ['127.0.0.1:19109']
-        labels: { instance: mini, keyboard: roseblue, transport: usb, usb_serial: '047B8C32401DC31D' }
+        labels: { instance: mini, keyboard: roseblue, transport: usb, usb_serial: 'A0DD18E29D278282' }

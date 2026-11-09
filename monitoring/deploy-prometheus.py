@@ -45,6 +45,11 @@ dashboard_dir = Path('/opt/monitoring/grafana/dashboards')
 original = config.read_text()
 begin = '  # BEGIN keyboard-telemetry (managed by zmk-config/monitoring)\n'
 end = '  # END keyboard-telemetry\n'
+# Existing hosts can still use the original collector's managed markers.
+legacy_begin = '  # BEGIN peamk-battery (managed by zmk-config/monitoring)\n'
+legacy_end = '  # END peamk-battery\n'
+if begin not in original and legacy_begin in original and legacy_end in original:
+    begin, end = legacy_begin, legacy_end
 if begin in original and end in original:
     before, rest = original.split(begin, 1)
     _, after = rest.split(end, 1)
