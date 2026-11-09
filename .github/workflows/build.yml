@@ -59,6 +59,7 @@ jobs:
             bootloader/
             zmk/
             zmk-pmw3610-driver/
+            zmk-paw3395-driver/
           key: west-zephyr-3.5-${{ hashFiles('config/west.yml', 'config/deps.yml', 'patches/*.patch') }}
 
       - name: West init

@@ -304,7 +304,11 @@ appears until the updated right firmware is flashed and the ball is moved.
 
 ## USB trackball measurements
 
-`darkblue-right-debug` and `roseblue-right` enable `CONFIG_KEYBOARD_TRACKBALL_USB_TELEMETRY`. A low-priority
+`darkblue-right-debug` enables `CONFIG_KEYBOARD_TRACKBALL_USB_TELEMETRY`.
+Roseblue's current PAW3395 test image emits driver startup logs rather than
+these PMW3610 quality packets, so its existing USB quality collector will wait
+for frames until PMW3610 firmware is restored or PAW3395 telemetry is added.
+A low-priority
 work item copies the same 20-byte packet and emits one structured log line
 every two seconds while USB is configured, not suspended, and CDC ACM DTR is
 asserted. Disconnect/suspend cancels the work; a configured USB connection

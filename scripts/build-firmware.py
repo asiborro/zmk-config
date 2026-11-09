@@ -33,7 +33,8 @@ def command(row):
              f'-DSHIELD={row["shield"]}', f"-DZMK_CONFIG={ROOT / 'config'}",
              f"-DZMK_EXTRA_MODULES={ROOT / 'config'}"]
     if row.get("snippet"):
-        args += [f"-DEXTRA_CONF_FILE={ROOT / 'config/diagnostics.conf'}"]
+        diagnostics = ROOT / row.get("diagnostics-conf", "config/diagnostics.conf")
+        args += [f"-DEXTRA_CONF_FILE={diagnostics}"]
     return args, build
 
 

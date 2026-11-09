@@ -1,7 +1,7 @@
 # Copyright (c) 2022 The ZMK Contributors
 # SPDX-License-Identifier: MIT
 
-if SHIELD_ROSEBLUE_LEFT
+if SHIELD_ROSEBLUE_RIGHT
 
 config ZMK_KEYBOARD_NAME
     default "roseblue"
@@ -9,7 +9,7 @@ config ZMK_KEYBOARD_NAME
 config ZMK_SPLIT_ROLE_CENTRAL
     default y
 
-endif # SHIELD_ROSEBLUE_LEFT
+endif # SHIELD_ROSEBLUE_RIGHT
 
 if SHIELD_ROSEBLUE_LEFT || SHIELD_ROSEBLUE_RIGHT
 
