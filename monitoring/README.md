@@ -305,9 +305,10 @@ appears until the updated right firmware is flashed and the ball is moved.
 ## USB trackball measurements
 
 `darkblue-right-debug` enables `CONFIG_KEYBOARD_TRACKBALL_USB_TELEMETRY`.
-Roseblue's current PAW3395 test image emits driver startup logs rather than
-these PMW3610 quality packets, so its existing USB quality collector will wait
-for frames until PMW3610 firmware is restored or PAW3395 telemetry is added.
+Roseblue's PAW3395 image enables the same USB reporter with protocol v2.
+Its existing motion burst is extended from six to twelve bytes to include
+SQUAL, 12-bit shutter, raw image sum/minimum/maximum, and observation flags.
+There is no extra polling or sensor wakeup; idle readings age normally.
 A low-priority
 work item copies the same 20-byte packet and emits one structured log line
 every two seconds while USB is configured, not suspended, and CDC ACM DTR is
@@ -316,7 +317,14 @@ without an open console schedules checks but emits no snapshots. The reporter
 does not read SPI, generate input events, change endpoints or enable a shell.
 Bluetooth telemetry remains available in the same firmware.
 
-The line's payload is `KEYBOARD_TB1 <uptime_ms> <40 hexadecimal characters>`.
+PMW3610 uses `KEYBOARD_TB1 <uptime_ms> <40 hexadecimal characters>`;
+PAW3395 uses `KEYBOARD_TB2 <uptime_ms> <48 hexadecimal characters>`.
+PAW v2 retains offsets 1–18 of the old packet, changes byte 0 to version 2,
+sets sensor ID 1 at byte 19, then appends raw sum, raw maximum, raw minimum
+and observation at bytes 20–23. Shutter at offset 4 is now 12-bit.
+The reader validates version, sensor ID, packet length and shutter range.
+PAW metrics carry `sensor="paw3395"`; existing PMW metrics keep their labels.
+Existing database rows migrate as PMW3610 and retain all prior readings.
 `uptime_ms` is an unsigned 32-bit millisecond counter, wrapping after about
 49 days. The hexadecimal packet uses the existing Bluetooth protocol above;
 the ordinary logger prefix and ANSI color escapes are not part of the payload.
@@ -343,7 +351,7 @@ below stores those samples in its own history and Prometheus job.
 | Device | Selection | Database | Cached metrics |
 | --- | --- | --- | --- |
 | darkblue | Bluetooth `D5:B0:5B:EC:16:5D` | `~/.local/share/keyboard-telemetry/history.sqlite3` | `127.0.0.1:19108` |
-| roseblue | USB serial `047B8C32401DC31D` | `~/.local/share/roseblue/history.sqlite3` | `127.0.0.1:19109` |
+| roseblue | USB serial `A0DD18E29D278282` | `~/.local/share/roseblue/paw3395-A0DD18E29D278282.sqlite3` | `127.0.0.1:19109` |
 
 Both services run indefinitely, including idle, charging and unplugged periods.
 Roseblue reads structured USB frames continuously and stores a snapshot every
@@ -357,8 +365,10 @@ fresh optical readings; `stale` is expected when no recent sensor burst exists.
 
 The roseblue dashboard contains only USB/sensor diagnostics and comparison
 plots against darkblue. It does not invent a left half or battery measurements
-for the USB-only collection. The firmware driver, CPI, polling and motion
-transform initially match; USB logging and the device names differ.
+for the USB-only collection. Roseblue uses PAW3395 at 400 CPI with 1:1 cursor movement; Darkblue retains
+PMW3610. Raw quality and shutter are sensor-specific and should not be
+interpreted as equivalent across models. The previous USB device history
+remains in `~/.local/share/roseblue/history.sqlite3`.
 
 Roseblue opens the last 15 minutes so short calibration sessions are visible.
 Its **Last captured SQUAL/shutter** cards retain the most recent valid value
@@ -378,9 +388,16 @@ bootloader. Install once before plugging in the newly flashed device:
 ```sh
 sudo install -m 644 monitoring/70-roseblue-console.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules
+sudo udevadm trigger --subsystem-match=tty --attr-match=serial=A0DD18E29D278282
 ```
 
 The single SSH tunnel forwards both loopback ports; other Pi monitoring jobs
 are preserved. Adjust the hardware IDs in the service files when installing
 this repository for different physical devices, and adjust the group and serial
 in the udev rule if using a different user/device.
+
+Deploy only Roseblue’s dashboard, preserving the Prometheus configuration and Darkblue dashboard:
+
+```sh
+python3 monitoring/deploy-prometheus.py --dashboard roseblue --dashboards-only
+```

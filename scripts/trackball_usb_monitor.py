@@ -40,6 +40,8 @@ class Snapshot:
             value["source_age_seconds"] += elapsed
             if value["state"] == "ok" and value["source_age_seconds"] > track.MAX_SAMPLE_AGE:
                 value.update(state="stale", squal=None, shutter=None, motion=None)
+                for field in ("raw_sum", "raw_max", "raw_min", "observation"):
+                    value[field] = None
         value["frame_age_seconds"] = elapsed
         return value
 

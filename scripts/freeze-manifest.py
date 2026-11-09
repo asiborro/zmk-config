@@ -6,6 +6,7 @@ import yaml
 from west.manifest import Manifest
 
 from pmw3610_patch import patch_metadata
+from paw3395_patch import patch_metadata as paw_patch_metadata
 
 
 manifest = Manifest.from_file()
@@ -18,8 +19,9 @@ frozen["manifest"]["projects"] = [
     if manifest.is_active(project)
 ]
 for project in manifest.projects[1:]:
-    if project.name == "zmk-pmw3610-driver" and manifest.is_active(project):
-        patches = patch_metadata(project.abspath)
+    helpers = {"zmk-pmw3610-driver": patch_metadata, "zmk-paw3395-driver": paw_patch_metadata}
+    if project.name in helpers and manifest.is_active(project):
+        patches = helpers[project.name](project.abspath)
         if patches:
             entry = next(item for item in frozen["manifest"]["projects"]
                          if item["name"] == project.name)

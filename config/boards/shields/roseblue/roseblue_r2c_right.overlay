@@ -12,7 +12,7 @@
         reg = <1>;
         spi-max-frequency = <4000000>;
         irq-gpios = <&gpio0 31 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
-        cpi = <600>;
+        cpi = <400>;
         evt-type = <INPUT_EV_REL>;
         x-input-code = <INPUT_REL_X>;
         y-input-code = <INPUT_REL_Y>;
@@ -22,8 +22,6 @@
 &trackball_listener {
     status = "okay";
     device = <&trackball>;
-    /* Restore the earlier 75% cursor multiplier for the PAW3395 test. */
-    input-processors = <&scroll_scaler 3 4 &tb_transform (INPUT_TRANSFORM_XY_SWAP | INPUT_TRANSFORM_X_INVERT)>;
 };
 
 &bootloader_key_right {

@@ -16,7 +16,7 @@ import time
 from trackball_telemetry import decode
 
 ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
-FRAME = re.compile(r"\bKEYBOARD_TB1 ([0-9]{1,10}) ([0-9a-fA-F]{40})$")
+FRAME = re.compile(r"\bKEYBOARD_TB([12]) ([0-9]{1,10}) ([0-9a-fA-F]{40}|[0-9a-fA-F]{48})$")
 
 
 def parse_line(line):
@@ -24,11 +24,14 @@ def parse_line(line):
     match = FRAME.search(line)
     if not match:
         return None
-    uptime = int(match[1])
+    uptime = int(match[2])
     if uptime > 0xFFFFFFFF:
         return None
     try:
-        return dict(decode(bytes.fromhex(match[2])), firmware_uptime_ms=uptime, transport="usb")
+        packet = bytes.fromhex(match[3])
+        if packet[0] != int(match[1]):
+            return None
+        return dict(decode(packet), firmware_uptime_ms=uptime, transport="usb")
     except ValueError:
         return None
 

@@ -1,9 +1,9 @@
 {
   "uid": "roseblue",
   "title": "roseblue",
-  "description": "Separate USB diagnostics for roseblue, selected by hardware serial 047B8C32401DC31D. The sensor configuration matches darkblue; the USB debug transport differs. No battery or left-half values are inferred.",
+  "description": "Roseblue PAW3395 VIK at 400 CPI, 1:1 cursor movement. USB controller A0DD18E29D278282. Optical panels select PAW3395 series; old PMW3610 history is preserved separately.",
   "schemaVersion": 39,
-  "version": 3,
+  "version": 4,
   "editable": false,
   "tags": [
     "keyboard",
@@ -25,7 +25,7 @@
   "panels": [
     {
       "id": 19,
-      "title": "roseblue \u00b7 USB trackball",
+      "title": "roseblue · USB trackball",
       "type": "text",
       "gridPos": {
         "x": 0,
@@ -35,7 +35,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "Last captured values stay visible for 24 hours; age and status show freshness. **Move the ball to refresh.** Graphs use 15-second samples; gaps mean no fresh reading. SQUAL is a raw 0\u2013255 register, not a percentage or ball-height measurement."
+        "content": "**PAW3395 VIK · 400 CPI · 1:1 movement** · USB `A0DD18E29D278282`. **Move the ball to refresh.** SQUAL is raw 0–255; shutter is 12-bit (0–4095) exposure in sensor clock cycles. Last captured cards retain PAW3395 readings for 24 hours; status and age show freshness. Graph gaps mean no fresh sample. PMW3610 history is excluded from PAW3395 panels."
       }
     },
     {
@@ -46,7 +46,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Most recent valid reading within the last 24 hours, retained for reference during idle or disconnect. Check sample age and status for freshness. Move the ball to generate a new sample.",
+      "description": "Most recent PAW3395 SQUAL within 24 hours. PMW3610 samples are excluded. Check sample age and status for freshness.",
       "gridPos": {
         "x": 0,
         "y": 3,
@@ -82,8 +82,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "last_over_time((keyboard_trackball_squal{job=\"roseblue\",half=\"right\"} >= 0)[24h:15s])",
-          "legendFormat": "roseblue",
+          "expr": "last_over_time((keyboard_trackball_squal{job=\"roseblue\",half=\"right\",sensor=\"paw3395\"} >= 0)[24h:15s])",
+          "legendFormat": "roseblue · PAW3395",
           "instant": true,
           "range": false,
           "datasource": {
@@ -102,7 +102,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Most recent valid reading within the last 24 hours, retained for reference during idle or disconnect. Check sample age and status for freshness. Move the ball to generate a new sample.",
+      "description": "Most recent PAW3395 12-bit shutter within 24 hours. Check sample age and status for freshness.",
       "gridPos": {
         "x": 6,
         "y": 3,
@@ -138,8 +138,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "last_over_time((keyboard_trackball_shutter_cycles{job=\"roseblue\",half=\"right\"} >= 0)[24h:15s])",
-          "legendFormat": "roseblue",
+          "expr": "last_over_time((keyboard_trackball_shutter_cycles{job=\"roseblue\",half=\"right\",sensor=\"paw3395\"} >= 0)[24h:15s])",
+          "legendFormat": "roseblue · PAW3395",
           "instant": true,
           "range": false,
           "datasource": {
@@ -216,8 +216,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "keyboard_trackball_sample_age_seconds{job=\"roseblue\",half=\"right\"}",
-          "legendFormat": "roseblue",
+          "expr": "keyboard_trackball_sample_age_seconds{job=\"roseblue\",half=\"right\",sensor=\"paw3395\"}",
+          "legendFormat": "roseblue · PAW3395",
           "instant": true,
           "range": false,
           "datasource": {
@@ -655,8 +655,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "keyboard_trackball_squal{job=\"roseblue\",half=\"right\"}",
-          "legendFormat": "roseblue",
+          "expr": "keyboard_trackball_squal{job=\"roseblue\",half=\"right\",sensor=\"paw3395\"}",
+          "legendFormat": "roseblue · PAW3395",
           "instant": false,
           "range": true,
           "datasource": {
@@ -676,7 +676,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Raw shutter register. Compare with SQUAL on the same surface; values do not directly measure distance.",
+      "description": "PAW3395 12-bit shutter (0–4095), in internal oscillator clock cycles. Upper byte first in motion burst. Not milliseconds or distance.",
       "gridPos": {
         "x": 12,
         "y": 10,
@@ -698,10 +698,9 @@
             "fillOpacity": 5,
             "spanNulls": false,
             "showPoints": "always",
-            "axisLabel": "",
+            "axisLabel": "Sensor clock cycles",
             "pointSize": 3
-          },
-          "max": 511
+          }
         },
         "overrides": []
       },
@@ -722,8 +721,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "keyboard_trackball_shutter_cycles{job=\"roseblue\",half=\"right\"}",
-          "legendFormat": "roseblue",
+          "expr": "keyboard_trackball_shutter_cycles{job=\"roseblue\",half=\"right\",sensor=\"paw3395\"}",
+          "legendFormat": "roseblue · PAW3395",
           "instant": false,
           "range": true,
           "datasource": {
@@ -788,8 +787,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "keyboard_trackball_sample_age_seconds{job=\"roseblue\",half=\"right\"}",
-          "legendFormat": "roseblue",
+          "expr": "keyboard_trackball_sample_age_seconds{job=\"roseblue\",half=\"right\",sensor=\"paw3395\"}",
+          "legendFormat": "roseblue · PAW3395",
           "instant": false,
           "range": true,
           "datasource": {
@@ -854,8 +853,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "keyboard_trackball_read_errors_total{job=\"roseblue\",half=\"right\"}",
-          "legendFormat": "roseblue",
+          "expr": "keyboard_trackball_read_errors_total{job=\"roseblue\",half=\"right\",sensor=\"paw3395\"}",
+          "legendFormat": "roseblue · PAW3395",
           "instant": false,
           "range": true,
           "datasource": {
@@ -875,7 +874,162 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Same sensor settings; different physical devices and telemetry transports. Compare similar ball movement. Higher SQUAL alone does not establish better tracking.",
+      "description": "Different sensors: Roseblue PAW3395 and Darkblue PMW3610. Raw values and oscillator clocks are sensor-specific; equal values do not imply equal quality or exposure time.",
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "noValue": "No recent sample",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 5,
+            "spanNulls": false,
+            "showPoints": "always",
+            "axisLabel": "",
+            "pointSize": 3
+          },
+          "max": 255
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "keyboard_trackball_squal{job=\"darkblue\",half=\"right\"}",
+          "legendFormat": "darkblue · PMW3610",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "keyboard_trackball_squal{job=\"roseblue\",half=\"right\",sensor=\"paw3395\"}",
+          "legendFormat": "roseblue · PAW3395 · USB",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "maxDataPoints": 2000,
+      "interval": "15s"
+    },
+    {
+      "id": 32,
+      "title": "Shutter comparison",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Different sensors: Roseblue PAW3395 and Darkblue PMW3610. Raw values and oscillator clocks are sensor-specific; equal values do not imply equal quality or exposure time.",
+      "gridPos": {
+        "x": 12,
+        "y": 34,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "noValue": "No recent sample",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 5,
+            "spanNulls": false,
+            "showPoints": "always",
+            "axisLabel": "Sensor clock cycles",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "keyboard_trackball_shutter_cycles{job=\"darkblue\",half=\"right\"}",
+          "legendFormat": "darkblue · PMW3610",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "keyboard_trackball_shutter_cycles{job=\"roseblue\",half=\"right\",sensor=\"paw3395\"}",
+          "legendFormat": "roseblue · PAW3395 · USB",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "maxDataPoints": 2000,
+      "interval": "15s"
+    },
+    {
+      "id": 33,
+      "title": "PAW3395 raw image values",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "RawData_Sum, Maximum_RawData and Minimum_RawData registers from the same motion burst as SQUAL; raw register values, not percentages.",
       "gridPos": {
         "x": 0,
         "y": 26,
@@ -921,8 +1075,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "keyboard_trackball_squal{job=\"darkblue\",half=\"right\"}",
-          "legendFormat": "darkblue \u00b7 Bluetooth",
+          "expr": "keyboard_trackball_raw_sum{job=\"roseblue\",half=\"right\",sensor=\"paw3395\"}",
+          "legendFormat": "Raw sum",
           "instant": false,
           "range": true,
           "datasource": {
@@ -932,8 +1086,19 @@
         },
         {
           "refId": "B",
-          "expr": "keyboard_trackball_squal{job=\"roseblue\",half=\"right\"}",
-          "legendFormat": "roseblue \u00b7 USB",
+          "expr": "keyboard_trackball_raw_max{job=\"roseblue\",half=\"right\",sensor=\"paw3395\"}",
+          "legendFormat": "Maximum",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "C",
+          "expr": "keyboard_trackball_raw_min{job=\"roseblue\",half=\"right\",sensor=\"paw3395\"}",
+          "legendFormat": "Minimum",
           "instant": false,
           "range": true,
           "datasource": {
@@ -946,14 +1111,14 @@
       "interval": "15s"
     },
     {
-      "id": 32,
-      "title": "Shutter comparison",
+      "id": 34,
+      "title": "PAW3395 observation flags",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Same sensor settings; different physical devices and telemetry transports. Compare similar ball movement. Higher SQUAL alone does not establish better tracking.",
+      "description": "Raw observation register from the motion burst. This is a bitfield, not a quality score.",
       "gridPos": {
         "x": 12,
         "y": 26,
@@ -978,7 +1143,7 @@
             "axisLabel": "",
             "pointSize": 3
           },
-          "max": 511
+          "max": 255
         },
         "overrides": []
       },
@@ -999,19 +1164,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "keyboard_trackball_shutter_cycles{job=\"darkblue\",half=\"right\"}",
-          "legendFormat": "darkblue \u00b7 Bluetooth",
-          "instant": false,
-          "range": true,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          }
-        },
-        {
-          "refId": "B",
-          "expr": "keyboard_trackball_shutter_cycles{job=\"roseblue\",half=\"right\"}",
-          "legendFormat": "roseblue \u00b7 USB",
+          "expr": "keyboard_trackball_observation{job=\"roseblue\",half=\"right\",sensor=\"paw3395\"}",
+          "legendFormat": "Observation",
           "instant": false,
           "range": true,
           "datasource": {
@@ -1026,7 +1180,7 @@
   ],
   "links": [
     {
-      "title": "darkblue \u00b7 split keyboard",
+      "title": "darkblue · split keyboard",
       "url": "/d/darkblue-battery/darkblue",
       "type": "link",
       "targetBlank": false

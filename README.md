@@ -20,7 +20,9 @@ in `<name>.dtsi`, electrical scanning in `<name>_r2c.dtsi`, bindings in its
 keymap, and LED counts in its own `boards/` overlays. These are separate files,
 not aliases or links to the other keyboard. The controller definitions,
 input processing and battery telemetry implementation are shared. Darkblue
-keeps its PMW3610; Roseblue currently tests Skree's **PAW3395 VIK** board.
+keeps its PMW3610; Roseblue currently tests Skree's **PAW3395 VIK** board. Its USB telemetry
+includes SQUAL, 12-bit shutter, raw image sum/min/max and observation flags;
+see [monitoring](monitoring/README.md) for the Roseblue Grafana dashboard.
 Roseblue's right controller works on its own over USB or Bluetooth. To use both
 halves, flash the matching left-peripheral image too; the older left-central
 firmware cannot serve as its split peripheral.
@@ -36,7 +38,7 @@ firmware cannot serve as its split peripheral.
 - Zephyr 3.5 build image pinned by digest to match this ZMK release.
 - Roseblue's [PAW3395 driver](https://github.com/badjeff/zmk-paw3395-driver)
   pinned to `bffa61761dc1fb87d8bc04133c55a10bc899a359`, including its bundled
-  nRF52840 library, as recommended by [Skree's board documentation](https://github.com/SkreeCustomKeyboards/PAW3395-Board).
+  nRF52840 library and a [passive quality observer](patches/paw3395-quality-observer.patch), as recommended by [Skree's board documentation](https://github.com/SkreeCustomKeyboards/PAW3395-Board).
 - Local Lemon board and boot-key module; provenance and license are in
   [`config/UPSTREAM`](config/UPSTREAM) and [`config/LICENSE-ZMK`](config/LICENSE-ZMK).
 
@@ -90,8 +92,8 @@ Connect the VIK PAW3395 board to Roseblue's right Lemon controller and flash
 `roseblue-right-cosmos_lemon_wireless`. The PAW3395 uses SPI chip select 1
 (P0.08); the shift register remains on chip select 0 (P0.04). Motion uses
 VIK GPIO2/P0.31, with SCK P1.09, MOSI P0.12 and MISO P0.06. SPI runs at 4 MHz.
-CPI is 600 and the minimum motion-report interval is 8 ms (at most 125 Hz).
-Cursor movement uses a **3/4 (75%) multiplier** to reduce PAW3395 sensitivity.
+CPI is 400 and the minimum motion-report interval is 8 ms (at most 125 Hz).
+Cursor movement stays **1:1**; sensitivity is reduced in the sensor itself.
 The existing pointer-axis transform and scroll-layer scaling are retained.
 
 For a sensor-only USB test, the right image works without the left controller.
@@ -101,8 +103,8 @@ startup logs are enabled; open the matching serial port with
 `PAW3395 initialized` or a failed initialization step. Logs are delayed eight
 seconds after boot to allow time to attach the console.
 
-The PAW3395 test uses its own driver logs. The previous PMW3610 SQUAL/shutter
-packet and USB dashboard collection are not available with this sensor.
+The PAW3395 image also emits versioned USB quality packets with SQUAL,
+12-bit shutter and raw image values for the Roseblue Grafana dashboard.
 
 For local builds, Docker uses the same pinned SDK and the same Python build
 command as CI. Both read **`build.yaml`**; no second target list is maintained.
@@ -179,10 +181,10 @@ comparisons.
 Darkblue polls its PMW3610 at **125 Hz** (nominally every 8 ms). Roseblue's
 PAW3395 is interrupt-driven and limits motion reports to one every **8 ms**.
 
-Both sensors use **600 CPI**. Darkblue keeps **100% (1:1) cursor scaling**;
-Roseblue uses **75% (3/4)**, reducing its current cursor speed by 25% before
-the host's pointer settings. The older 800 CPI with 75% scaling had the same
-nominal speed as 600 CPI with 100% scaling. Scroll-layer scaling is **1/12**, preserving the previous
+Darkblue uses **600 CPI**; Roseblue's PAW3395 uses **400 CPI**. Both keep
+**100% (1:1) cursor movement**, with no software sensitivity multiplier.
+The older 800 CPI with 75% scaling had the same nominal speed as 600 CPI
+with 100% scaling. Scroll-layer scaling is **1/12**, preserving the previous
 nominal scroll speed at 800 CPI with 1/16 scaling. Native sensor counts and
 software-scaled counts can differ in individual reports; equal nominal speed
 does not guarantee identical feel or improved smoothness.
@@ -241,10 +243,11 @@ USB sample age is measured when the firmware emits its snapshot; it excludes
 any subsequent transport delay.
 
 Flash the named right image onto its matching controller. Roseblue's right USB
-port now handles both host input and PAW3395 startup diagnostics. Its existing
-USB collector selects serial `047B8C32401DC31D`, but it expects the old PMW3610
-quality packets and cannot interpret PAW3395 startup logs. The stored history
-and [roseblue dashboard](http://ci4.test:3000/d/roseblue/roseblue) remain available.
+port handles host input, PAW3395 startup logs and passive quality packets.
+Its USB collector selects serial `A0DD18E29D278282` and stores a separate
+PAW3395 history. The [roseblue dashboard](http://ci4.test:3000/d/roseblue/roseblue)
+shows SQUAL, 12-bit shutter, raw image values, sample age and read errors.
+Old PMW3610 history remains intact and is excluded from the PAW3395 panels.
 Darkblue is selected by Bluetooth address `D5:B0:5B:EC:16:5D`; changing either
 firmware's name cannot cause the readers to collect from the other device.
 

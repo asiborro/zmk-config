@@ -40,7 +40,8 @@ static void report_quality(struct k_work *work) {
         encoded[sizeof(encoded) - 1] = '\0';
         /* Only the diagnostic packet: no keycodes, pointer deltas or sensor I/O.
          * Device uptime lets the reader reject queued/repeated console lines. */
-        LOG_INF("KEYBOARD_TB1 %u %s", (unsigned int)k_uptime_get_32(), encoded);
+        LOG_INF("KEYBOARD_TB%u %u %s", (unsigned int)packet[0],
+                (unsigned int)k_uptime_get_32(), encoded);
     }
 
     if (usb_active()) {
