@@ -1,9 +1,9 @@
 {
   "uid": "roseblue",
   "title": "roseblue",
-  "description": "Roseblue PAW3395 VIK at 400 CPI, 1:1 cursor movement. USB controller A0DD18E29D278282. Optical panels select PAW3395 series; old PMW3610 history is preserved separately.",
+  "description": "Roseblue PAW3395 VIK at 500 CPI, 1:1 cursor movement. USB controller A0DD18E29D278282. Optical panels select PAW3395 series; old PMW3610 history is preserved separately.",
   "schemaVersion": 39,
-  "version": 4,
+  "version": 5,
   "editable": false,
   "tags": [
     "keyboard",
@@ -35,7 +35,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "**PAW3395 VIK · 400 CPI · 1:1 movement** · USB `A0DD18E29D278282`. **Move the ball to refresh.** SQUAL is raw 0–255; shutter is 12-bit (0–4095) exposure in sensor clock cycles. Last captured cards retain PAW3395 readings for 24 hours; status and age show freshness. Graph gaps mean no fresh sample. PMW3610 history is excluded from PAW3395 panels."
+        "content": "**PAW3395 VIK · 500 CPI · 1:1 movement** · USB `A0DD18E29D278282`. **Move the ball to refresh.** SQUAL is raw 0–255; shutter is 12-bit (0–4095) exposure in sensor clock cycles. Last captured cards retain PAW3395 readings for 24 hours; status and age show freshness. Graph gaps mean no fresh sample. PMW3610 history is excluded from PAW3395 panels."
       }
     },
     {
