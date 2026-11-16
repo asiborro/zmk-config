@@ -27,8 +27,8 @@
 
         scroller {
             layers = <8>;
-            /* Preserve nominal scroll speed: 600 / 12 equals 800 / 16. */
-            input-processors = <&scroll_scaler 1 12 &tb_transform (INPUT_TRANSFORM_XY_SWAP | INPUT_TRANSFORM_X_INVERT | INPUT_TRANSFORM_Y_INVERT) &zip_xy_to_scroll_mapper>;
+            /* Preserve nominal scroll speed: 1200 / 24 equals 600 / 12. */
+            input-processors = <&scroll_scaler 1 24 &tb_transform (INPUT_TRANSFORM_XY_SWAP | INPUT_TRANSFORM_X_INVERT | INPUT_TRANSFORM_Y_INVERT) &zip_xy_to_scroll_mapper>;
         };
     };
 };
