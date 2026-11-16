@@ -22,11 +22,13 @@
 &trackball_listener {
     status = "okay";
     device = <&trackball>;
-    /* Roseblue's PAW3395 uses native axes, without Darkblue's transform. */
-    input-processors = <&scroll_scaler 1 1>;
+    /* Roseblue's PAW3395 is mounted rotated 180 degrees: invert both axes
+     * (no swap, unlike Darkblue's transform), for cursor and scroll alike.
+     */
+    input-processors = <&scroll_scaler 1 1 &tb_transform (INPUT_TRANSFORM_X_INVERT | INPUT_TRANSFORM_Y_INVERT)>;
 
     scroller {
-        input-processors = <&scroll_scaler 1 12 &zip_xy_to_scroll_mapper>;
+        input-processors = <&scroll_scaler 1 12 &tb_transform (INPUT_TRANSFORM_X_INVERT | INPUT_TRANSFORM_Y_INVERT) &zip_xy_to_scroll_mapper>;
     };
 };
 

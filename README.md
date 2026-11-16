@@ -94,7 +94,7 @@ Connect the VIK PAW3395 board to Roseblue's right Lemon controller and flash
 VIK GPIO2/P0.31, with SCK P1.09, MOSI P0.12 and MISO P0.06. SPI runs at 4 MHz.
 CPI is 500 and the minimum motion-report interval is 8 ms (at most 125 Hz).
 Cursor movement stays **1:1**; sensitivity is reduced in the sensor itself.
-Roseblue uses native sensor axes without swapping, inversion or rotation,
+Roseblue inverts both sensor axes (a 180-degree rotation, without swapping),
 including on the scroll layer. Scroll-layer scaling remains 1/12.
 
 For a sensor-only USB test, the right image works without the left controller.
@@ -182,11 +182,12 @@ comparisons.
 Darkblue polls its PMW3610 at **125 Hz** (nominally every 8 ms). Roseblue's
 PAW3395 is interrupt-driven and limits motion reports to one every **8 ms**.
 
-Darkblue uses **600 CPI**; Roseblue's PAW3395 uses **500 CPI**. Both keep
-**100% (1:1) cursor movement**, with no software sensitivity multiplier.
-The older 800 CPI with 75% scaling had the same nominal speed as 600 CPI
-with 100% scaling. Scroll-layer scaling is **1/12**, preserving the previous
-nominal scroll speed at 800 CPI with 1/16 scaling. Native sensor counts and
+Darkblue uses **1200 CPI**; Roseblue's PAW3395 uses **500 CPI**. Both keep
+**100% (1:1) cursor movement**, with no software sensitivity multiplier;
+adjust speed on each host instead (Hyprland uses the flat profile at
+sensitivity 0, so one sensor count moves one pixel). Darkblue's scroll-layer
+scaling is **1/24**, preserving the nominal scroll speed of 600 CPI with 1/12
+scaling. Roseblue keeps its own 1/12 scroll scaling. Native sensor counts and
 software-scaled counts can differ in individual reports; equal nominal speed
 does not guarantee identical feel or improved smoothness.
 
